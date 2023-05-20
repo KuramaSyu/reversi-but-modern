@@ -1,0 +1,28 @@
+- backend/
+  - app.py                       # Hauptdatei des Backend-Codes (Tornado)
+  - game_logic.py                # Datei mit der Spiellogik
+  - ...
+  
+- frontend/
+  - public/                      # Öffentliche Dateien (HTML, CSS, Bilder, etc.)
+    - index.html
+    - styles.css
+    - ...
+  - src/                         # Quellcode des Frontends
+    - components/                # Komponenten für das Frontend
+      - Board.tsx                 # Reversi-Brett-Komponente
+      - ...
+    - services/                  # Services für API-Aufrufe oder WebSocket-Verbindungen
+      - api.ts                    # HTTP-API-Service (optional)
+      - websocket.ts              # WebSocket-Service
+      - ...
+    - App.tsx                     # Hauptkomponente des Frontends
+    - index.tsx                   # Einstiegspunkt der Anwendung
+    - ...
+  - ...
+
+- README.md                      # Dokumentation für das Gesamtprojekt
+- requirements.txt               # Abhängigkeiten für das Backend
+- package.json                   # Abhängigkeiten für das Frontend (Node.js)
+- ...
+
