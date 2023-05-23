@@ -14,7 +14,6 @@ class EchoWebSocket(WebSocketHandler):
             "timestamp": datetime.now().timestamp(),
             "sender": "server"
         }
-    
     def open(self):
         print("WebSocket opened")
 
