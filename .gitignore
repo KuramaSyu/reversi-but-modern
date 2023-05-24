@@ -191,6 +191,10 @@ yarn.lock
 /frontend/dist
 
 # Compiled output
+
 /frontend/*.js
 /frontend/*.css
 /frontend/*.map
+
+!/frontend/src/index.css
+!/frontend/tailwind.config.js
