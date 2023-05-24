@@ -5,6 +5,8 @@ import tornado
 from tornado.websocket import WebSocketHandler
 
 class EchoWebSocket(WebSocketHandler):
+    def check_origin(self, origin):
+        return True
 
     def to_json(self, data, action: str, status: int = 200):
         return {
@@ -18,6 +20,7 @@ class EchoWebSocket(WebSocketHandler):
         print("WebSocket opened")
 
     def on_message(self, message):
+        print("Message received: {}".format(message))
         self.write_message(self.to_json(message, "echo", 200))
 
     def on_close(self):
@@ -26,7 +29,7 @@ class EchoWebSocket(WebSocketHandler):
 
 def make_app():
     return tornado.web.Application([
-        (r"/", EchoWebSocket),
+        (r"/chat", EchoWebSocket),
     ])
 
 async def main():
