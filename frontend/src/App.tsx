@@ -1,24 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { themes } from './themes';
 interface TitleBarProps {
   title: string;
   darkTheme: boolean;
   onDarkThemeToggle: () => void;
 }
-
-let themes = {
-  light: {
-    titlebar_bg: 'bg-green-200',
-    bg: 'bg-green-100',
-    text: 'text-green-800',
-    buttons: 'bg-green-500 text-white',
-  },
-  dark: {
-    titlebar_bg: 'bg-slate-700',
-    bg: 'bg-slate-800',
-    text: 'text-white',
-    buttons: 'bg-slate-500 text-white',
-  },
-};
 
 /// TitleBar component
 const TitleBar: React.FC<{ title: string; darkTheme: boolean; onDarkThemeToggle: () => void }> = ({
@@ -26,13 +12,14 @@ const TitleBar: React.FC<{ title: string; darkTheme: boolean; onDarkThemeToggle:
   darkTheme,
   onDarkThemeToggle,
 }) => {
-  const theme = darkTheme ? themes.dark : themes.light;
+  const theme = darkTheme ? "theme-nordic" : "theme-pastel";
 
   return (
-    <div className={`title-bar ${theme.titlebar_bg}`}>
-      <h1 className={`text-xl ${theme.text}`}>{title}</h1>
+    <div className={`title-bar ${theme} bg-b text-highlight-c flex justify-between`}>
+      <h1 className={`px-10 mx-20 my-1 py-2 text-3xl font-light`}>{title}</h1>
       <button
-        className={`px-4 py-2 rounded ${theme.buttons}`}
+        className={`px-10 mx-20 my-1 py-2 rounded-xl bg-d hover:bg-c
+        focus:border-blue-500`}
         onClick={onDarkThemeToggle}
       >
         {darkTheme ? 'Light Theme' : 'Dark Theme'}
@@ -70,15 +57,15 @@ const WebSocketDemo: React.FC = () => {
   };
 
   const toggleDarkTheme = () => {
-    setDarkTheme((prevDarkTheme) => !prevDarkTheme);
+    setDarkTheme(!darkTheme);
   };
 
-  const theme = darkTheme ? themes.dark : themes.light;
+  const theme = darkTheme ? "theme-nordic" : "theme-pastel";
 
   return (
-    <div className={`app ${theme.bg}`}>
-      <TitleBar title="WebSocket Demo" darkTheme={darkTheme} onDarkThemeToggle={toggleDarkTheme} />
-      <div className={`message-list ${theme.text}`}>
+    <div className={`app ${theme} bg-a`}>
+      <TitleBar title="Reversi — But Modern" darkTheme={darkTheme} onDarkThemeToggle={toggleDarkTheme} />
+      <div className={`bg-d text-highlight-b message-list`}>
         {messages.map((message, index) => (
           <p key={index}>{message}</p>
         ))}
@@ -87,11 +74,11 @@ const WebSocketDemo: React.FC = () => {
         type="text"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        className={`border rounded px-2 py-1 mt-2 ${theme.text}`}
+        className={`rounded px-2 py-1 mt-2 bg-d`}
       />
       <button
         onClick={sendMessage}
-        className={`px-4 py-2 rounded mt-2 ${theme.buttons}`}
+        className={`px-4 py-2 mx-5 my-2 rounded-full mt-2 bg-d hover:bg-highlight-d`}
       >
         Send
       </button>
