@@ -1,3 +1,43 @@
 @tailwind base;
 @tailwind components;
+body {
+    background-color: #2e3440; /* Replace with your desired color */
+  }
+.theme-greenish {
+    --color-a: #2e3440;
+    --color-b: #3b4252;
+    --color-c: #434c5e;
+    --color-d: #4c566a;
+    --highlight-a: #8fbcbb;
+    --highlight-b: #88c0d0;
+    --highlight-c: #81a1c1;
+    --highlight-d: #5e81ac;
+  }
+  
+  .theme-nordic {
+      --color-a: #2e3440;
+      --color-b: #3b4252;
+      --color-c: #434c5e;
+      --color-d: #4c566a;
+      --highlight-a: #8fbcbb;
+      --highlight-b: #88c0d0;
+      --highlight-c: #81a1c1;
+      --highlight-d: #5e81ac;
+  
+  }
+  .theme-pastel {
+    --color-a: #d4bfff;  /* Lavender */
+    --color-b: #ffb3ba;  /* Pastel Red */
+    --color-c: #ffdac1;  /* Peach */
+    --color-d: #c0e2da;  /* Mint */
+    --highlight-a: #6236a6; /* Dark Purple */
+    --highlight-b: #c63939; /* Dark Red */
+    --highlight-c: #e86a4c; /* Dark Orange */
+    --highlight-d: #008c72; /* Dark Green */
+    /* --highlight-a: #9578e8; /* Dark Lilac */
+    /* --highlight-b: #ff6666; /* Coral */
+    /* --highlight-c: #ff9f7f; Salmon */
+    /* --highlight-d: #00cc99; Teal */
+  }
+  
 @tailwind utilities;
