@@ -96,7 +96,7 @@ const WebSocketDemo: React.FC = () => {
   // <Board theme={theme}/>
   // )
   return (
-    <div className={`app ${theme} bg-a`}>
+    <div className={`app ${theme} bg-a transition duration-700 ease-out`}>
       <TitleBar title="Reversi — But Modern" darkTheme={darkTheme} onDarkThemeToggle={toggleDarkTheme} />
       <div className='flex flex-row justify-center py-2'>
         <input
