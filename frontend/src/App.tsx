@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { themes } from './themes';
 interface TitleBarProps {
   title: string;
   darkTheme: boolean;
@@ -28,12 +27,40 @@ const TitleBar: React.FC<{ title: string; darkTheme: boolean; onDarkThemeToggle:
   );
 };
 
+
+class Board extends React.Component {
+  render() {
+    const squares = [];
+
+    for (let row = 0; row < 8; row++) {
+      <div className='flex flex-col h-full'></div>
+      for (let col = 0; col < 8; col++) {
+        const color = (row + col) % 2 === 0 ? "bg-white" : "bg-gray-800";
+        squares.push(
+          <div
+            key={`${row}-${col}`}
+            className={`h-fit w-fit ${color}`}
+          ></div>
+        );
+      }
+      
+    }
+
+    return (
+      <div className="grid grid-cols-8 h-max w-max">
+        {squares}
+      </div>
+    );
+  }
+}
+
+
 // WebSocketDemo component
 const WebSocketDemo: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [darkTheme, setDarkTheme] = useState(false);
+  const [darkTheme, setDarkTheme] = useState(true);
 
   useEffect(() => {
     const newSocket = new WebSocket('ws://localhost:8888/chat');
@@ -61,27 +88,35 @@ const WebSocketDemo: React.FC = () => {
   };
 
   const theme = darkTheme ? "theme-nordic" : "theme-pastel";
-
+  // return (
+  //   <div><Board /></div>
+  // )
   return (
     <div className={`app ${theme} bg-a`}>
       <TitleBar title="Reversi — But Modern" darkTheme={darkTheme} onDarkThemeToggle={toggleDarkTheme} />
-      <div className={`bg-d text-highlight-b message-list`}>
-        {messages.map((message, index) => (
-          <p key={index}>{message}</p>
-        ))}
-      </div>
       <input
         type="text"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        className={`rounded px-2 py-1 mt-2 bg-d`}
-      />
+        className={`rounded px-2 py-1 mt-2 bg-d`}/>
       <button
         onClick={sendMessage}
         className={`px-4 py-2 mx-5 my-2 rounded-full mt-2 bg-d hover:bg-highlight-d`}
-      >
-        Send
-      </button>
+      >Send</button>
+
+      
+      <div className="flex flex-row justify-around">
+        <div className='w-1/2'>
+        <Board />
+        </div>
+        
+        <div className={`bg-d text-highlight-b message-list`}>
+          {messages.map((message, index) => (
+            <p key={index}>{message}</p>
+          ))}
+        </div>
+      </div>
+      
     </div>
   );
 };
