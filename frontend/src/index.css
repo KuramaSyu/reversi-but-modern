@@ -3,7 +3,8 @@
 body {
     background-color: #2e3440; /* Replace with your desired color */
   }
-.theme-greenish {
+@layer base{
+  .theme-greenish {
     --color-a: #2e3440;
     --color-b: #3b4252;
     --color-c: #434c5e;
@@ -13,40 +14,43 @@ body {
     --highlight-c: #81a1c1;
     --highlight-d: #5e81ac;
   }
-  
+}
+
+@layer components {
   .theme-nordic {
-      --color-a: #2e3440;
-      --color-b: #3b4252;
-      --color-c: #434c5e;
-      --color-d: #4c566a;
-      --highlight-a: #8fbcbb;
-      --highlight-b: #88c0d0;
-      --highlight-c: #81a1c1;
-      --highlight-d: #5e81ac;
+      --color-a: 46 52 64;
+      --color-b: 59 66 82;
+      --color-c: 67 76 94;
+      --color-d: 76 86 106;
+      --highlight-a: 143 188 187;
+      --highlight-b: 136 192 208;
+      --highlight-c: 129 161 193;
+      --highlight-d: 94 129 172;
   
   }
+}
+@layer components{
   .theme-pastel {
-    --color-a: #d4bfff;  /* Lavender */
-    --color-b: #ffb3ba;  /* Pastel Red */
-    --color-c: #ffdac1;  /* Peach */
-    --color-d: #c0e2da;  /* Mint */
-    --highlight-a: #6236a6; /* Dark Purple */
-    --highlight-b: #c63939; /* Dark Red */
-    --highlight-c: #e86a4c; /* Dark Orange */
-    --highlight-d: #008c72; /* Dark Green */
-    /* --highlight-a: #9578e8; /* Dark Lilac */
-    /* --highlight-b: #ff6666; /* Coral */
-    /* --highlight-c: #ff9f7f; Salmon */
-    /* --highlight-d: #00cc99; Teal */
+    --color-a: 212 191 255;   /* Lavender */
+    --color-b: 255 179 186;   /* Pastel Red */
+    --color-c: 255 218 193;   /* Peach */
+    --color-d: 192 226 218;   /* Mint */
+    --highlight-a: 98 54 166; /* Dark Purple */
+    --highlight-b: 198 57 57; /* Dark Red */
+    --highlight-c: 232 106 76; /* Dark Orange */
+    --highlight-d: 0 140 114; /* Dark Green */
   }
+}
+@layer base{
   .theme-neon {
-    --color-a:  #ff00ff;  /* Dark Lilac */
-    --color-b: #ff0000;  /* Coral */
-    --color-c:  #0000ff;  /* Salmon */
-    --color-d:  #00ff00;  /* Teal */
-    --highlight-a: #6236a6; /* Dark Purple */
-    --highlight-b: #c63939; /* Dark Red */
-    --highlight-c: #e86a4c; /* Dark Orange */
-    --highlight-d: #008c72; /* Dark Green */
+    --color-a: 255 0 255;    /* Dark Lilac */
+    --color-b: 255 0 0;      /* Coral */
+    --color-c: 0 0 255;      /* Salmon */
+    --color-d: 0 255 0;      /* Teal */
+    --highlight-a: 98 54 166; /* Dark Purple */
+    --highlight-b: 198 57 57; /* Dark Red */
+    --highlight-c: 232 106 76; /* Dark Orange */
+    --highlight-d: 0 140 114; /* Dark Green */
   }
+}
 @tailwind utilities;
