@@ -12,4 +12,15 @@ class Session(ABC):
     @abstractmethod
     def id(self) -> int:
         """the id of the sesison"""
-        raise 
+        raise NotImplementedError()
+    
+
+    @abstractmethod
+    async def fetch(self) -> "Session":
+        """fetches the session from the database"""
+        raise NotImplementedError()
+    
+    @abstractmethod
+    async def create(self) -> "Session":
+        """creates the session and strores it in the database"""
+        raise NotImplementedError()
