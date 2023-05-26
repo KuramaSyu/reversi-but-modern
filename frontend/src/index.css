@@ -39,5 +39,14 @@ body {
     /* --highlight-c: #ff9f7f; Salmon */
     /* --highlight-d: #00cc99; Teal */
   }
-  
+  .theme-neon {
+    --color-a:  #ff00ff;  /* Dark Lilac */
+    --color-b: #ff0000;  /* Coral */
+    --color-c:  #0000ff;  /* Salmon */
+    --color-d:  #00ff00;  /* Teal */
+    --highlight-a: #6236a6; /* Dark Purple */
+    --highlight-b: #c63939; /* Dark Red */
+    --highlight-c: #e86a4c; /* Dark Orange */
+    --highlight-d: #008c72; /* Dark Green */
+  }
 @tailwind utilities;
