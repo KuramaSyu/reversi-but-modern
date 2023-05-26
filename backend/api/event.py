@@ -4,9 +4,19 @@ import abc
 import asyncio
 from abc import ABC, abstractmethod, abstractclassmethod
 
+from . import User
+
 
 
 class Event(ABC):
+    @property
+    @abstractmethod
+    def user(self) -> User:
+        """
+        the user object
+        """
+        raise NotImplementedError()
+    
     @abstractclassmethod
     def from_json(cls, data: Dict[str, Any]) -> "Event":
         """
@@ -23,4 +33,4 @@ class Event(ABC):
         `Event`
             The converted Event object
         """
-        ...
+        raise NotImplementedError()
