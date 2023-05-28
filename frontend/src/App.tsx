@@ -9,7 +9,7 @@ interface TitleBarProps {
   onCycleTheme: () => void;
 }
 
-const default_animation = 'transition-all duration-1000 ease-out';
+const default_animation = 'transition duration-1000 ease-out';
 /// TitleBar component
 const TitleBar: React.FC<TitleBarProps> = ({ title, theme, themes, onCycleTheme }) => {
 
