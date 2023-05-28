@@ -1,0 +1,9 @@
+{
+    "event": "ChipPlacedEvent",
+    "event_data": {
+        "column": 1,
+        "row": 1
+    },
+    "session_id": "1234567890",
+    "user_id": "1234567890"
+}
