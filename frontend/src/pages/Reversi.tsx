@@ -13,6 +13,7 @@ active_col: number;
 clicked_row: number;
 clicked_col: number;
 screen_height: number;
+rotation: number;
 }
 
 interface ChipProps {
@@ -34,7 +35,29 @@ class Chip extends React.Component<ChipProps> {
         );
     }
 }
-  
+
+class ChipPlacedEvent {
+  user_id: number;
+  data: { row: number; col: number };
+  session: string;
+  event: string = "ChipPlacedEvent";
+  type: string = "request";
+
+  constructor(user_id: number, row: number, col: number, session?: string) {
+    this.user_id = user_id;
+    this.data = {
+      row: row,
+      col: col,
+    };
+    this.session = session ?? 'test00session';
+  }
+
+
+  public to_json() {
+    return JSON.stringify(this);
+  }
+}
+
 class Board extends React.Component<BoardProps, BoardState> {
     active_attrs: string;
     unactive_attrs: string;
@@ -55,6 +78,7 @@ class Board extends React.Component<BoardProps, BoardState> {
         clicked_row: -1,
         clicked_col: -1,
         screen_height: window.innerHeight,
+        rotation: 0,
         };  
         this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
         this.unactive_attrs = "text-highlight-b font-extralight text-xl";
@@ -81,7 +105,7 @@ class Board extends React.Component<BoardProps, BoardState> {
     render() {
         const squares = [];
         const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
-        const { active_row, active_col, clicked_col, clicked_row, screen_height } = this.state;
+        const { active_row, active_col, clicked_col, clicked_row, screen_height, rotation } = this.state;
         const row_amount = this.props.rows;
         const col_amount = this.props.cols;
         const numberLabels = Array.from({ length: col_amount -1 }, (_, i) => i + 1);
@@ -96,14 +120,14 @@ class Board extends React.Component<BoardProps, BoardState> {
             this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
             this.cyclePlayer();
             if (socket) {
-                socket.send(`clicked on ${numberLabels[col]}${letters[row]}`);
+                socket.send(new ChipPlacedEvent(1, row, col).to_json())
             }
         };
         // generate squares
         for (let row = 0; row < row_amount; row++) {
-        for (let col = 0; col < col_amount; col++) {
+        for (let col = -1; col < col_amount-1; col++) {
             // add orientation squares
-            if (row === row_amount - 1 && col === 0) {
+            if (row === row_amount - 1 && col === -1) {
             // add empty square
             squares.push(
                 <div
@@ -114,36 +138,36 @@ class Board extends React.Component<BoardProps, BoardState> {
             );
             continue;
             }
-            if (row < row_amount - 1 && col === 0) {
-            // add letters
-            // background if active
-            const active_attrs = row === active_row ? this.active_attrs : this.unactive_attrs;
-            const letter = letters[row];
-            squares.push(
-                <div
-                key={`${row}-${col}`}
-                className={`flex justify-center items-center transition-all duration-700 ease-out rounded-full ${active_attrs}`}
-                >
-                {letter}
-                </div>
-            );
-            continue;
+            if (row < row_amount - 1 && col === -1) {
+              // add letters
+              // background if active
+              const active_attrs = row === active_row ? this.active_attrs : this.unactive_attrs;
+              const letter = letters[row];
+              squares.push(
+                  <div
+                  key={`${row}:${col}`}
+                  className={`flex justify-center items-center transition-all duration-700 ease-out rounded-full ${active_attrs}`}
+                  >
+                  {letter}
+                  </div>
+              );
+              continue;
             }
-            if (row === row_amount -1 && col > 0) {
-            // add numbers
-            // background if active
-            const active_attrs = col === active_col ? this.active_attrs : this.unactive_attrs;
-            const number = numberLabels[col -1];
-            
-            squares.push(
-                <div
-                key={`${row}-${col}`}
-                className={`flex justify-center items-center transition-all duration-700 ease-out rounded-full ${active_attrs}`}
-                >
-                {number}
-                </div>
-            );
-            continue;
+            if (row === row_amount -1 && col > -1) {
+              // add numbers
+              // background if active
+              const active_attrs = col === active_col ? this.active_attrs : this.unactive_attrs;
+              const number = numberLabels[col];
+              
+              squares.push(
+                  <div
+                  key={`${row}-${col}`}
+                  className={`flex justify-center items-center transition-all duration-700 ease-out rounded-full ${active_attrs}`}
+                  >
+                  {number}
+                  </div>
+              );
+              continue;
             }
             // add normal squares
             const color = (row + col) % 2 === 0 ? "bg-b " : "bg-d";
@@ -162,20 +186,13 @@ class Board extends React.Component<BoardProps, BoardState> {
                 }}
                 // send WS message and set active row and col
                 onClick={() => {
-                handleClick(row, col);
+                  handleClick(row, col);
                 }}
             >
                 <div className={`flex w-full h-full justify-center items-center hover:bg-highlight-d/50 hover:rounded-2xl 
                 bg-transparent transition-all duration-[1200ms] ease-out hover:duration-200`}>
                     {/* render chip on click into the square */}
-                    <div className='flex w-full h-full items-center justify-center'>
-                    {/* {isActive ? (
-                    <Chip color="bg-highlight-b/50 border-4 border-black/40" />
-                    ) : (
-                    <Chip color="bg-transparent rounded-lg w-[0%] h-[0%] border-transparent" />
-                    )} */}
-                    {chip}
-                    </div>
+                    <div className='flex w-full h-full items-center justify-center'>{chip}</div>
                 </div>
 
                 
@@ -183,14 +200,28 @@ class Board extends React.Component<BoardProps, BoardState> {
             );
         }
         }
-        const px = Math.floor(screen_height * 0.8);
-        return (
-        <div className={` overflow-hidden`}>
+      const px = Math.floor(screen_height * 0.8);
+      const px_rest_width = (Math.min(window.innerHeight, window.innerWidth - px) ) / 1.42 * 1;
+      return (
+        <div className={`flex flex-col lg:flex-row items-center justify-center`}>
             <div className={theme + " grid grid-cols-9 grid-rows-9"} style={{ height: px, width: px }}>
             {squares}
             </div>
+            <div className="flex flex-row justify-around items-center relative my-5 lg:my-0 lg:mx-5 max-h-[80vh] overflow-hidden" style={{ height: px_rest_width, width: px_rest_width }}>
+                <div
+                    className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
+                    border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
+                    ${this.current_chip_number === 1 ? 'rotate-90 border-highlight-a' : '-rotate-90 border-highlight-d'} `}
+                ></div>
+                <div className="flex rounded-full bg-b justify-center items-center text-8xl" style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
+                    A
+                </div>
+                <div className="flex rounded-full bg-c justify-center items-center text-8xl" style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
+                    B
+                </div>
+            </div>
         </div>
-        );
+      );
     }
 }
 
@@ -227,7 +258,7 @@ interface ReversiProps {
     };
   
     return (
-      <div className={`${theme} flex flex-col md:flex-row space-x-4 space-y-4 my-10 justify-around px-[5%] overflow-y-visible text-highlight-c`}>
+      <div className={`${theme} flex flex-col md:flex-col space-x-4 space-y-4 my-10 justify-around px-[5%] overflow-y-visible text-highlight-c`}>
         {/* Board Component */}
         <div className="flex-shrink">
           <Board theme={theme} rows={9} cols={9} socket={socket} />
@@ -237,12 +268,12 @@ interface ReversiProps {
         {/* <div className="flex-auto text-highlight-c">
           <div
             className={`bg-c text-center h-[63vh] text-highlight-c message-list flex-auto rounded-3xl overflow-auto transition-all 
-            duration-300 scrollbar-thin scrollbar-thumb-b scrollbar-track-d`}
+            duration-300 scrollbar-thin scrollbar-thumb-d scrollbar-track-b w-[80%] my-48`}
           >
             {messages.map((message, index) => (
-              <p key={index} className="transition-all duration-300">
-                {message}
-              </p>
+              <pre key={index} className="transition-all duration-300">
+                {message.toString()}
+              </pre>
             ))}
           </div>
   
@@ -264,7 +295,7 @@ interface ReversiProps {
             </button>
           </div>
         </div> */}
-        {/* end Websocket communication */}
+
       </div>
     );
   };
