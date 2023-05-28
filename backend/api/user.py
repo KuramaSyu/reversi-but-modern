@@ -3,11 +3,13 @@ from abc import abstractmethod, abstractclassmethod, ABC
 
 __all__ = ["User"]
 
-class User(ABC):
+class User():
+    def __init__(self, id: int):
+        self._id = id
+
     @property
-    @abstractmethod
     def id(self) -> int:
         """
         the Uer ID
         """
-        ...
+        return self._id
