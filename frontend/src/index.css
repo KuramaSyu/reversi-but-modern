@@ -3,19 +3,6 @@
 body {
     background-color: #2e3440; /* Replace with your desired color */
   }
-@layer base{
-  .theme-greenish {
-    --color-a: #2e3440;
-    --color-b: #3b4252;
-    --color-c: #434c5e;
-    --color-d: #4c566a;
-    --highlight-a: #8fbcbb;
-    --highlight-b: #88c0d0;
-    --highlight-c: #81a1c1;
-    --highlight-d: #5e81ac;
-  }
-}
-
 @layer components {
   .theme-nordic {
       --color-a: 46 52 64;
@@ -41,7 +28,7 @@ body {
     --highlight-d: 0 140 114; /* Dark Green */
   }
 }
-@layer base{
+@layer components{
   .theme-neon {
     --color-a: 255 0 255;    /* Dark Lilac */
     --color-b: 255 0 0;      /* Coral */
@@ -53,4 +40,17 @@ body {
     --highlight-d: 0 140 114; /* Dark Green */
   }
 }
+@layer components {
+  .theme-woodland {
+    --color-a: 216 227 193;    /* Light Green */
+    --color-b: 195 209 171;    /* Mid Green */
+    --color-c: 176 191 150;    /* Dark Green */
+    --color-d: 157 172 132;    /* Deep Green */
+    --highlight-a: 98 113 82;  /* Dark Green */
+    --highlight-b: 87 101 74;  /* Deep Green */
+    --highlight-c: 76 88 65;  /* Dark Green */
+    --highlight-d: 66 77 56;  /* Very Deep Green */
+  }
+}
+
 @tailwind utilities;
