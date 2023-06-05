@@ -38,4 +38,4 @@ class State(ABC):
     
 
 class ReversiState(State):
-    
+    ...
