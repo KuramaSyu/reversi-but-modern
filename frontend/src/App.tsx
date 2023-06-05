@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import Reversi from './pages/Reversi';
+import Lobby from './pages/Lobby';
 
 interface TitleBarProps {
   title: string;
@@ -47,7 +48,9 @@ const App: React.FC = () => {
       <Router>
         <TitleBar title="Reversi" theme={theme} themes={themes} onCycleTheme={cycleTheme} />
         <Routes>
-          <Route path="/" element={<Reversi theme={theme} />} />
+          <Route path='/' element={<Navigate to='/lobby' />} />
+          <Route path="/game" element={<Reversi theme={theme} />} />
+          <Route path="/lobby" element={<Lobby />} />
         </Routes>
       </Router>
     </div>
