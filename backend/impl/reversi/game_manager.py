@@ -2,6 +2,8 @@ from typing import *
 
 from api import State
 
+states: Dict[str, "ReversiState"] = {}
+
 
 class Chip:
     def __init__(self, row: int, column: int, owner_id: int, swap_user_id: int):
@@ -25,9 +27,12 @@ class Chip:
     def column(self) -> int:
         return self._col
     
-
-
-    
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "owner_id": self.owner_id,
+            "row": self.row,
+            "column": self.column
+        }
 
 
 class ReversiState(State):
