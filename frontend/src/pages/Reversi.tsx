@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 
 interface BoardProps {
     theme: string;
@@ -235,14 +236,28 @@ interface ReversiProps {
     const [messages, setMessages] = useState<string[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [socket, setSocket] = useState<WebSocket | null>(null);
-  
+    const [connected_session, setConnectedSession] = useState<string | null>(null);
+    const { session_id } = useParams<{ session_id: string }>();
     useEffect(() => {
       const newSocket = new WebSocket('ws://localhost:8888/chat');
       setSocket(newSocket);
   
       newSocket.onmessage = (event) => {
         const message = event.data;
+        const json_event = JSON.parse(message);
+        if (json_event.event === 'SessionJoinEvent' && json_event.status === 200) {
+          setConnectedSession(json_event.data.session);
+        };
         setMessages((prevMessages) => [message, ...prevMessages]);
+      };
+      newSocket.onopen = (event) => {
+        console.log('connected');
+        newSocket.send(JSON.stringify({
+          event: 'SessionJoinEvent',
+          type: 'request',
+          data: {
+            session: session_id
+        },}));
       };
   
       return () => {
@@ -264,16 +279,19 @@ interface ReversiProps {
           <Board theme={theme} rows={9} cols={9} socket={socket} />
         </div>
   
+        <div>
+          {connected_session? `connected to session: ${connected_session}` : 'connecting...'}
+        </div>
         {/* Websocket communication */}
-        {/* <div className="flex-auto text-highlight-c">
+        <div className="flex-auto text-highlight-c">
           <div
             className={`bg-c text-center h-[63vh] text-highlight-c message-list flex-auto rounded-3xl overflow-auto transition-all 
             duration-300 scrollbar-thin scrollbar-thumb-d scrollbar-track-b w-[80%] my-48`}
           >
             {messages.map((message, index) => (
-              <pre key={index} className="transition-all duration-300">
-                {message.toString()}
-              </pre>
+              <p key={index} className="transition-all duration-300">
+                {message}
+              </p>
             ))}
           </div>
   
@@ -294,7 +312,7 @@ interface ReversiProps {
               Send
             </button>
           </div>
-        </div> */}
+        </div>
 
       </div>
     );
