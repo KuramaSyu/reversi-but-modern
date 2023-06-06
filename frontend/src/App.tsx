@@ -49,7 +49,7 @@ const App: React.FC = () => {
         <TitleBar title="Reversi" theme={theme} themes={themes} onCycleTheme={cycleTheme} />
         <Routes>
           <Route path='/' element={<Navigate to='/lobby' />} />
-          <Route path="/game" element={<Reversi theme={theme} />} />
+          <Route path="/game/:session_id" element={<Reversi theme={theme} />} />
           <Route path="/lobby" element={<Lobby />} />
         </Routes>
       </Router>
