@@ -37,17 +37,18 @@ const Lobby: React.FC = () => {
         <CopyToClipboard text={sessionCode}
           onCopy={() => setCopied(sessionCode)}>
           <div className='w-24 h-24'>
-            <CopySvg className={`w-full h-full mx-10 p-4 rounded-3xl text-highlight-a fill-highlight-a 
-            ${copied === sessionCode? "bg-d":"bg-d fill-a"} border-highlight-c border-solid border-[1px]
-            transition-all duration-300`} />
+            <CopySvg className={`w-full h-full mx-10 p-4 rounded-3xl 
+             border-highlight-c border-solid border-[1px]
+            hover:bg-highlight-c transition duration-300 ease-in cursor-pointer
+            ${copied === sessionCode? "bg-d fill-highlight-a":"bg-d fill-a"}`} />
           </div>
         </CopyToClipboard>
       </div>
       <div className='flex relative'
       onClick={() => navigate(`/game/${sessionCode}`)}>
           <div className='relative border-highlight-c border-solid border-[1px] py-4 px-4 
-          rounded-3xl font-normal'>
-            <p className='font-thin'>PLAY</p>
+          rounded-3xl z-10 font-thin hover:text-c hover:bg-highlight-c transition duration-300 ease-in cursor-pointer'>
+            PLAY
           </div>
           <div className='absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-3xl blur-xl'>
           </div>
