@@ -1,0 +1,1 @@
+"""Implements the pure logic of the game."""
