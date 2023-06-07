@@ -9,10 +9,10 @@ class SessionManager:
     sessions: Dict[str, List[int]] = {}
 
     @classmethod
-    def get_id(cls) -> int:
-        code = random.randint(1000000, 9999999)
+    def get_ws_id(cls) -> int:
+        code = random.randint(1000, 9999)
         if code in cls.websockets:
-            return cls.get_id()
+            return cls.get_ws_id()
         return code
     
     @classmethod
