@@ -34,7 +34,7 @@ class WebSocket(WebSocketHandler):
             "sender": "server"
         }
     def open(self):
-        self._id = SessionManager.get_id()
+        self._id = SessionManager.get_ws_id()
         SessionManager.websockets[self._id] = self
         print(f"WebSocket with id {self._id} opened")
 
@@ -51,14 +51,23 @@ class WebSocket(WebSocketHandler):
 
 
 class CreateSessionHandler(RequestHandler):
-  def get(self):
-    code = SessionManager.create_session()
-    self.write({
-        "status": 200,
-        "data": {
-            "code": code
-        }
-    })
+    def __init__(self, *args, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._set_headers()
+
+    def _set_headers(self):
+        self.set_header('Access-Control-Allow-Origin', '*')
+        self.set_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    def get(self):
+        code = SessionManager.create_session()
+        self.write({
+            "status": 200,
+            "data": {
+                "code": code
+            }
+        })
 
 
 def make_app():
@@ -68,8 +77,10 @@ def make_app():
     ])
 
 async def main():
+    PORT = 8888
+    print(f"Starting server on port {PORT}")
     app = make_app()
-    app.listen(8888)
+    app.listen(PORT)
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
