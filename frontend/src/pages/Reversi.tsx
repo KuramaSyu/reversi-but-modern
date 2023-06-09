@@ -125,7 +125,7 @@ class Board extends React.Component<BoardProps, BoardState> {
         const { active_row, active_col, clicked_col, clicked_row, screen_height, rotation } = this.state;
         const row_amount = this.props.rows;
         const col_amount = this.props.cols;
-        const numberLabels = Array.from({ length: col_amount -1 }, (_, i) => i + 1);
+        const numberLabels = Array.from({ length: col_amount -1 }, (_, i) => col_amount - i - 1);
         const { theme, socket, session } = this.props;
 
         // call websocket on click
@@ -155,11 +155,11 @@ class Board extends React.Component<BoardProps, BoardState> {
             );
             continue;
             }
-            if (row < row_amount - 1 && col === -1) {
+            if (row === row_amount -1 && col > -1) {
               // add letters
               // background if active
-              const active_attrs = row === active_row ? this.active_attrs : this.unactive_attrs;
-              const letter = letters[row];
+              const active_attrs = col === active_col ? this.active_attrs : this.unactive_attrs;
+              const letter = letters[col];
               squares.push(
                   <div
                   key={`${row}:${col}`}
@@ -170,11 +170,12 @@ class Board extends React.Component<BoardProps, BoardState> {
               );
               continue;
             }
-            if (row === row_amount -1 && col > -1) {
+            
+            if (row < row_amount - 1 && col === -1) {
               // add numbers
               // background if active
-              const active_attrs = col === active_col ? this.active_attrs : this.unactive_attrs;
-              const number = numberLabels[col];
+              const active_attrs = row === active_row ? this.active_attrs : this.unactive_attrs;
+              const number = numberLabels[row];
               
               squares.push(
                   <div
