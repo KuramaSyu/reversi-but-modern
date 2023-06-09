@@ -8,9 +8,7 @@ from tornado.websocket import WebSocketHandler
 from tornado.web import RequestHandler, Application
 import random
 
-from test import A
-print(A)
-from grids import Grid
+from utils import Grid
 print(Grid)
 from impl.session_manager import SessionManager
 from impl.event_handler import EventHandler
