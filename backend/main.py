@@ -19,7 +19,7 @@ class WebSocket(WebSocketHandler):
     _session: str|None = None
 
     def __init__(self, *args, **kwargs: Any) -> None:
-        self.event_handler = EventHandler(self)
+        self.event_handler: EventHandler = EventHandler(self)
         super().__init__(*args, **kwargs)
 
     def check_origin(self, origin):
