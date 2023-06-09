@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 
 interface BoardProps {
@@ -6,6 +6,7 @@ interface BoardProps {
     rows: number;
     cols: number;
     socket: WebSocket | null;
+    session: string;
   }
   
 interface BoardState {
@@ -23,6 +24,7 @@ interface ChipProps {
 }
 
 class Chip extends React.Component<ChipProps> {
+
     render() {
         const { color, bg_color } = this.props;
 
@@ -43,6 +45,7 @@ class ChipPlacedEvent {
   session: string;
   event: string = "ChipPlacedEvent";
   type: string = "request";
+  status: number = 200;
 
   constructor(user_id: number, row: number, col: number, session?: string) {
     this.user_id = user_id;
@@ -85,6 +88,19 @@ class Board extends React.Component<BoardProps, BoardState> {
         this.unactive_attrs = "text-highlight-b font-extralight text-xl";
     }
 
+    on_chip_placed(event: ChipPlacedEvent) {
+
+        if (event.status !== 200) {
+            console.log("Error: ", event);
+            return;
+        }
+        const row = event.data.row;
+        const col = event.data.col;
+        this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
+        this.cyclePlayer();
+        this.forceUpdate( )
+    }
+
     cyclePlayer() {
         this.current_chip_number = this.current_chip_number === 1 ? 2 : 1;
     }
@@ -110,7 +126,7 @@ class Board extends React.Component<BoardProps, BoardState> {
         const row_amount = this.props.rows;
         const col_amount = this.props.cols;
         const numberLabels = Array.from({ length: col_amount -1 }, (_, i) => i + 1);
-        const { theme, socket } = this.props;
+        const { theme, socket, session } = this.props;
 
         // call websocket on click
         const handleClick = (row: number, col: number) => {
@@ -118,10 +134,10 @@ class Board extends React.Component<BoardProps, BoardState> {
                 clicked_col: col,
                 clicked_row: row,
             });
-            this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
-            this.cyclePlayer();
+            // this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
+            // this.cyclePlayer();
             if (socket) {
-                socket.send(new ChipPlacedEvent(1, row, col).to_json())
+                socket.send(new ChipPlacedEvent(this.current_chip_number, row, col, session).to_json())
             }
         };
         // generate squares
@@ -238,6 +254,8 @@ interface ReversiProps {
     const [socket, setSocket] = useState<WebSocket | null>(null);
     const [connected_session, setConnectedSession] = useState<string | null>(null);
     const { session_id } = useParams<{ session_id: string }>();
+    // Create a ref for the Board component
+    const boardRef = useRef<Board>(null);
     useEffect(() => {
       const newSocket = new WebSocket('ws://localhost:8888/chat');
       setSocket(newSocket);
@@ -248,6 +266,10 @@ interface ReversiProps {
         if (json_event.event === 'SessionJoinEvent' && json_event.status === 200) {
           setConnectedSession(json_event.data.session);
         };
+        if (json_event.event === 'ChipPlacedEvent' && json_event.status === 200) {
+          // Call on_chip_placed method of the Board component
+          boardRef.current?.on_chip_placed(json_event);
+        }
         setMessages((prevMessages) => [message, ...prevMessages]);
       };
       newSocket.onopen = (event) => {
@@ -276,7 +298,7 @@ interface ReversiProps {
       <div className={`${theme} flex flex-col md:flex-col space-x-4 space-y-4 my-10 justify-around px-[5%] overflow-y-visible text-highlight-c`}>
         {/* Board Component */}
         <div className="flex-shrink">
-          <Board theme={theme} rows={9} cols={9} socket={socket} />
+          <Board ref={boardRef} theme={theme} rows={9} cols={9} socket={socket} session={session_id ?? 'FFFF'}/>
         </div>
   
         <div>
