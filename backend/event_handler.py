@@ -43,6 +43,7 @@ class EventHandler:
         self.event_manager.add_listener("TurnMadeEvent", self.turn_made)
         self.event_manager.add_listener("SessionJoinEvent", self.session_join_event)
         self.event_manager.add_listener("ErrorEvent", self.error_event)
+        self.event_manager.add_listener("ChipPlacedEvent", self.chip_placed_event)
 
     async def dispatch(self, event):
         await self.message_receive(event)
@@ -86,6 +87,15 @@ class EventHandler:
                     "session": session
                 },
             }
+        
+    async def chip_placed_event(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "event": "ChipPlacedEvent",
+            "status": 200,
+            "type": "response",
+            "data": event["data"],
+            "user_id": event["user_id"]
+        }
         
     async def error_event(self, event):
         return event
