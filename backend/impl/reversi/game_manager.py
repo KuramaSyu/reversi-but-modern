@@ -2,7 +2,7 @@ from typing import *
 
 from api import State
 
-from game import Game
+from impl.reversi.game import Game
 
 states: Dict[str, Game] = {}
 
