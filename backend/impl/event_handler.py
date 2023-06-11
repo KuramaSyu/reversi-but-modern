@@ -1,6 +1,9 @@
 from typing import *
 import json
 from tornado.websocket import WebSocketHandler
+import random
+import traceback
+from enum import Enum
 
 from impl.session_manager import SessionManager
 
@@ -8,6 +11,9 @@ from impl.reversi.game import Game
 from impl.reversi.game_manager import ReversiManager
 
 
+class ResponseType(Enum):
+    SESSION = 0
+    PLAYER = 1
 
 class EventManager:
     def __init__(self, event_handler: "EventHandler"):
@@ -22,9 +28,15 @@ class EventManager:
     async def notify_listeners(self, event_type: str, event: Dict[str, Any]):
         if event_type in self.listeners:
             for listener in self.listeners[event_type]:
-                response = await listener(event)
-                print(f"Response to {self.event_handler.ws._id}: {response}")
-                self.event_handler.ws.write_message(response)
+                response, scope = await listener(event)
+                if scope == ResponseType.SESSION:
+                    print("respond to session")
+                    for ws in SessionManager.get_session_ws(event["session"]):
+                        print(f"Sending response to {ws._id}: {response}")
+                        ws.write_message(response)
+                else:
+                    print(f"Sending response to {self.event_handler._id}: {response}")
+                    self.event_handler.ws.write_message(response)
 
 
 
@@ -54,15 +66,18 @@ class EventHandler:
         await self.message_receive(event)
 
     async def message_receive(self, event):
+        # decrypt event
         try:
             event = json.loads(event)
         except json.JSONDecodeError:
+            # invalid json syntax
             event = {
                 "event": "ErrorEvent",
                 "status": 400,
                 "message": "Invalid JSON Syntax",
                 "data": event
             }
+        
         event_type = event["event"]
         print("Event received:", event_type)
         await self.event_manager.notify_listeners(event_type, event)
@@ -70,19 +85,27 @@ class EventHandler:
     async def turn_made(self):
         print("Turn made")
 
-    async def session_join_event(self, event) -> Dict[str, Any]:
+    async def session_join_event(self, event) -> Tuple[Dict[str, Any], ResponseType]:
         """
         check if session is valid and return status
         """
-        session = event["data"]["session"]
+        session = event["session"]
         if SessionManager.validate_session(session):
+            player_id = self.ws._id
+            SessionManager.add_session_ws(session, self.ws)
+            ReversiManager.create_game(
+                player_id_1=player_id,
+                player_id_2=12345,
+                session=session
+            )
             return {
                 "event": "SessionJoinEvent",
                 "status": 200,
+                "session": session,
                 "data": {
-                    "session": session
+                    "player_id": player_id,
                 },
-            }
+            }, ResponseType.SESSION
         else:
             return {
                 "event": "SessionJoinEvent",
@@ -90,41 +113,47 @@ class EventHandler:
                 "message": "Session does not exist",
                 "data": {
                     "session": session
-                },
-            }
+                }
+            }, ResponseType.PLAYER
         
-    async def chip_placed_event(self, event: Dict[str, Any]) -> Dict[str, Any]:
-        game: Game | None = ReversiManager.get_game(event["data"]["session"])
+    async def chip_placed_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
+        game: Game | None = ReversiManager.get_game(event["session"])
         if game is None:
             return {
                 "event": "ChipPlacedEvent",
                 "status": 404,
                 "message": "Session does not exist",
-                "data": event["data"]
-            }
+                "data": event["data"],
+                "session": event["session"]
+            }, ResponseType.PLAYER
         try:
             swapped_chips = game.place_chip(
                 row=event["data"]["row"],
-                col=event["data"]["col"],
+                column=event["data"]["col"],
+                player=event["user_id"]
             )
             return {
                 "event": "ChipPlacedEvent",
                 "status": 200,
-                "session": event["data"]["session"],
+                "session": event["session"],
                 "data": {
                     "row": event["data"]["row"],
                     "col": event["data"]["col"],
                     "swapped_chips": swapped_chips,
                     "player": game.current_player
                 },
-            }
+            }, ResponseType.SESSION
         except Exception as e:
-            return json.loads(str(e))
+            error = traceback.format_exc()
+            try:
+                return json.loads(str(e)), ResponseType.PLAYER
+            except json.JSONDecodeError:
+                print(error)
             
 
         
     async def error_event(self, event):
-        return event
+        return event, ResponseType.PLAYER
         
 
 
