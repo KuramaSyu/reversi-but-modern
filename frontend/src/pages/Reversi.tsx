@@ -10,12 +10,13 @@ interface BoardProps {
   }
   
 interface BoardState {
-active_row: number;
-active_col: number;
-clicked_row: number;
-clicked_col: number;
-screen_height: number;
-rotation: number;
+  active_row: number;
+  active_col: number;
+  clicked_row: number;
+  clicked_col: number;
+  screen_height: number;
+  rotation: number;
+  player_id: number | null;
 }
 
 interface ChipProps {
@@ -71,7 +72,6 @@ class Board extends React.Component<BoardProps, BoardState> {
         1 : <Chip color="bg-highlight-a/70 border-4 border-black/40" bg_color='bg-a'/>,
         2 : <Chip color="bg-highlight-d/70 border-4 border-black/40" bg_color='bg-a' />,
     };
-
     current_chip_number: number = 1;
 
     constructor(props: BoardProps) {
@@ -83,6 +83,7 @@ class Board extends React.Component<BoardProps, BoardState> {
         clicked_col: -1,
         screen_height: window.innerHeight,
         rotation: 0,
+        player_id: null,
         };  
         this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
         this.unactive_attrs = "text-highlight-b font-extralight text-xl";
@@ -99,6 +100,13 @@ class Board extends React.Component<BoardProps, BoardState> {
         this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
         this.cyclePlayer();
         this.forceUpdate( )
+    }
+
+    setPlayerId(id: number) {
+        console.log("Setting player id: ", id)
+        this.setState(
+          {player_id: id}
+        )
     }
 
     cyclePlayer() {
@@ -130,14 +138,24 @@ class Board extends React.Component<BoardProps, BoardState> {
 
         // call websocket on click
         const handleClick = (row: number, col: number) => {
+          console.log("Clicked: ", row, col);
             this.setState({
                 clicked_col: col,
                 clicked_row: row,
             });
-            // this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
-            // this.cyclePlayer();
+            
+            if (!this.state.player_id) {
+                console.log("Error: player id not set");
+                return;
+            }
             if (socket) {
-                socket.send(new ChipPlacedEvent(this.current_chip_number, row, col, session).to_json())
+                console.log("Sending chip placed event");
+                socket.send(
+                  new ChipPlacedEvent(this.state.player_id, row, col, session)
+                  .to_json()
+                )
+            } else {
+                console.log("Error: socket not set");
             }
         };
         // generate squares
@@ -265,7 +283,8 @@ interface ReversiProps {
         const message = event.data;
         const json_event = JSON.parse(message);
         if (json_event.event === 'SessionJoinEvent' && json_event.status === 200) {
-          setConnectedSession(json_event.data.session);
+          setConnectedSession(json_event.session);
+          boardRef.current?.setPlayerId(json_event.data.player_id);
         };
         if (json_event.event === 'ChipPlacedEvent' && json_event.status === 200) {
           // Call on_chip_placed method of the Board component
@@ -278,9 +297,9 @@ interface ReversiProps {
         newSocket.send(JSON.stringify({
           event: 'SessionJoinEvent',
           type: 'request',
-          data: {
-            session: session_id
-        },}));
+          session: session_id
+          })
+        );
       };
   
       return () => {
@@ -302,8 +321,9 @@ interface ReversiProps {
           <Board ref={boardRef} theme={theme} rows={9} cols={9} socket={socket} session={session_id ?? 'FFFF'}/>
         </div>
   
-        <div>
-          {connected_session? `connected to session: ${connected_session}` : 'connecting...'}
+        <div className='flex flex-row gap-1 justify-between'>
+          <div>{connected_session? `connected to session: ${connected_session}` : 'connecting...'}</div>
+          <div>{boardRef.current?.state.player_id? `player id: ${boardRef.current?.state.player_id}` : 'no player id received yet'}</div>
         </div>
         {/* Websocket communication */}
         <div className="flex-auto text-highlight-c">
