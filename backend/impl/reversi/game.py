@@ -36,6 +36,10 @@ class Chip:
     def owner_id(self) -> int:
         return self._owner_id
     
+    @owner_id.setter
+    def owner_id(self, value: int) -> None:
+        self._owner_id = value
+    
     @property
     def row(self) -> int:
         return self._row
@@ -52,7 +56,12 @@ class Chip:
         }
 
     def __repr__(self) -> str:
-        return f"<Chip owner_id={self.owner_id} row={self.row} column={self.column}>"
+        # return f"<Chip owner_id={self.owner_id} row={self.row} column={self.column}>"
+        return self.__str__()
+    
+    def __str__(self) -> str:
+        """print chip in chess format"""
+        return f"<Chip ower={self.owner_id} field={chr(self.column + 65)}{self.row + 1}"
     
 
 
@@ -135,35 +144,41 @@ class Board:
 
         affected_chips: Set[Chip] = set()
         for direction in directions:
-            start = False
-            end = False
-            for chip in direction:
-                # start when first player chip is found
-                if chip.owner_id == player_id:
-                    start = True
-                # skip rest when not started
-                if not start:
-                    continue
-                # mark end after the first empty chip is found
-                if chip.owner_id is None:
-                    end = True
-                # raise error if a non empty chip is found after the end
-                if end and not chip.owner_id is None:
-                    raise RuleError(
-                        json.dumps(
-                            {
-                                "event": "RuleErrorEvent",
-                                "message": "You have to place your chip next to an enemy chip.",
-                                "user_id": player_id
-                            }
-                        )
-                    )
-                # continue when chip does not need to be swapped
-                if chip.owner_id == player_id:
-                    continue
-                # add chip to affected chips
-                affected_chips.append(chip)
+            for row in direction:
+                print(f"check row: {str(row)}")
+                start = False
+                end = False
+                for chip in row:
+                    # start when first player chip is found
+                    if chip.owner_id == player_id:
+                        start = True
+                    # skip rest when not started
+                    if not start:
+                        continue
+                    # mark end after the first empty chip is found
+                    if chip.owner_id is None:
+                        end = True
+                    # raise error if a non empty chip is found after the end
+                    if end:
+                        if not chip.owner_id is None:
+                            raise RuleError(
+                                json.dumps(
+                                    {
+                                        "event": "RuleErrorEvent",
+                                        "message": "You have to place your chip next to an enemy chip.",
+                                        "user_id": player_id
+                                    }
+                                )
+                            )
+                        continue
+                    # continue when chip does not need to be swapped
+                    if chip.owner_id == player_id:
+                        continue
+                    # add chip to affected chips
+                    print(f"affect chip: {str(chip)}")
+                    affected_chips.add(chip)
         # swap affected chips
+        print(f"affected chips: {str(affected_chips)}")
         for chip in affected_chips:
             chip.swap_user_id()
         return affected_chips
@@ -184,7 +199,7 @@ class Board:
         for row in range(rows):
             board.append([])
             for column in range(columns):
-                board.append(
+                board[-1].append(
                     Chip(Game=self, row=row, column=column)
                 )
         self.board = board
@@ -214,7 +229,8 @@ class Game:
     ): 
         self._player_1 = player_1
         self._player_2 = player_2
-        self._current_player = random.choice([player_1, player_2])
+        #self._current_player_id = random.choice([player_1, player_2])
+        self._current_player_id = player_1
         self._board = board
 
     @property
@@ -224,9 +240,9 @@ class Game:
     def _swap_current_player(self) -> None:
         """swaps the current player"""
         if self.current_player == self.player_1:
-            self._current_player = self.player_2
+            self._current_player_id = self.player_2
         else:
-            self._current_player = self.player_1
+            self._current_player_id = self.player_1
     
     @property
     def player_1(self) -> int:
