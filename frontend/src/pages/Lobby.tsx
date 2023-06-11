@@ -7,6 +7,9 @@ const Lobby: React.FC = () => {
   const [sessionCode, setSessionCode] = useState('');
   const [copied, setCopied] = useState(''); // contains the copied text
   const navigate = useNavigate(); 
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [userIds, setUserIds] = useState<Array<number>>([]);
+  const [playButtonClicked, setPlayButtonClicked] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,6 +25,28 @@ const Lobby: React.FC = () => {
 
     fetchData();
   }, []);
+
+    useEffect(() => {
+      // Establish WebSocket connection
+      const socket = new WebSocket('ws://localhost:8888/game');
+      setWs(socket);
+
+      // Handle WebSocket messages
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.event === 'SessionJoinEvent' && data.status === 200) {
+          const { session, user_id } = data;
+          setUserIds((prevUserIds) => [...prevUserIds, user_id]);
+          setSessionCode(session);
+        }
+      };
+
+      // Cleanup WebSocket connection on component unmount
+      return () => {
+        socket.close();
+      };
+    }, []);
 
   return (
     <div className="flex flex-col h-full text-6xl text-highlight-a justify-center 
