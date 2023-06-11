@@ -10,17 +10,16 @@ states: Dict[str, Game] = {}
 
 class ReversiManager:
     """manages the open instances of games"""
-    
-    def __init__(self):
-        # Dict[Session, ReversiState]
-        self._games: Dict[str, Game] = {}
-
-    def create_game(self, player_id_1: int, player_id_2: int) -> str:
+    _games: Dict[str, Game] = {}
+        
+    @classmethod
+    def create_game(cls, player_id_1: int, player_id_2: int, session: str) -> str:
         """creates a new game and returns its id"""
         game = Game.DEFAULT(player_id_1, player_id_2)
+        cls._games[session] = game
         
-
-    def get_game(self, session: str) -> Optional[Game]:
+    @classmethod
+    def get_game(cls, session: str) -> Optional[Game]:
         """returns the game with the given id"""
-        return self._games.get(session, None)
+        return cls._games.get(session, None)
     
