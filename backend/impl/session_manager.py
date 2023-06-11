@@ -6,7 +6,7 @@ import random
 
 class SessionManager:
     websockets: Dict[int, WebSocketHandler] = {}
-    sessions: Dict[str, List[int]] = {}
+    sessions: Dict[str, List[WebSocketHandler]] = {}
 
     @classmethod
     def get_ws_id(cls) -> int:
@@ -16,20 +16,20 @@ class SessionManager:
         return code
     
     @classmethod
-    def add_session_ws(cls, session: str, ws_id: int) -> None:
+    def add_session_ws(cls, session: str, ws: WebSocketHandler) -> None:
         if session not in cls.sessions:
             cls.sessions[session] = []
-        cls.sessions[session].append(ws_id)
+        cls.sessions[session].append(ws)
 
     @classmethod
-    def remove_session_ws(cls, session: str, ws_id: int) -> None:
+    def remove_session_ws(cls, session: str, ws: WebSocketHandler) -> None:
         """
         Removes a websocket from a session.
         If the session is empty, it will be deleted
         """
         if session not in cls.sessions:
             return
-        cls.sessions[session].remove(ws_id)
+        cls.sessions[session].remove(ws)
         if len(cls.sessions[session]) == 0:
             del cls.sessions[session]
 
@@ -37,8 +37,8 @@ class SessionManager:
     def get_session_ws(cls, session: str) -> List[WebSocketHandler]:
         if session not in cls.sessions:
             return []
-        return [cls.websockets[ws_id] for ws_id in cls.sessions[session]]
-
+        return cls.sessions[session]
+    
     @classmethod
     def create_session(cls) -> str:
         """
@@ -54,4 +54,6 @@ class SessionManager:
     @classmethod
     def validate_session(cls, session: str) -> bool:
         """whether a session exists or not"""
-        return session in cls.sessions
+        print(cls.sessions.keys())
+        print(session in cls.sessions.keys())
+        return session in cls.sessions.keys()
