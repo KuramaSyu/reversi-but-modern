@@ -35,7 +35,7 @@ class EventManager:
                         print(f"Sending response to {ws._id}: {response}")
                         ws.write_message(response)
                 else:
-                    print(f"Sending response to {self.event_handler._id}: {response}")
+                    print(f"Sending response to {self.event_handler.ws._id}: {response}")
                     self.event_handler.ws.write_message(response)
 
 
@@ -156,6 +156,76 @@ class EventHandler:
         return event, ResponseType.PLAYER
         
 
+class LobbyEventHandler:
+    def __init__(self, ws: WebSocketHandler):
+        self.ws = ws
+        self.event_manager = EventManager(self)
+        self.event_manager.add_listener("SessionCreateEvent", self.session_create_event)
+        # session leave event
+        self.event_manager.add_listener("SessionJoinEvent", self.session_join_event)
+        # game start event
+
+
+    async def dispatch(self, event):
+        await self.message_receive(event)
+
+    async def message_receive(self, event):
+        # decrypt event
+        try:
+            event = json.loads(event)
+        except json.JSONDecodeError:
+            # invalid json syntax
+            event = {
+                "event": "ErrorEvent",
+                "status": 400,
+                "message": "Invalid JSON Syntax",
+                "data": event
+            }
+        
+        event_type = event["event"]
+        print("Event received:", event_type)
+        await self.event_manager.notify_listeners(event_type, event)
+    
+    async def session_join_event(self, event) -> Tuple[Dict[str, Any], ResponseType]:
+        """
+        check if session is valid and return status
+        """
+        session = event["session"]
+        if SessionManager.validate_session(session):
+            player_id = self.ws._id
+            SessionManager.add_session_ws(session, self.ws)
+            return {
+                "event": "SessionJoinEvent",
+                "status": 200,
+                "session": session,
+                "data": {
+                    "player_id": player_id,
+                    "custom_id": event["custom_id"]
+                },
+            }, ResponseType.SESSION
+        else:
+            return {
+                "event": "SessionJoinEvent",
+                "status": 404,
+                "message": "Session does not exist",
+                "data": {
+                    "session": session
+                }
+            }, ResponseType.PLAYER
+        
+    async def session_create_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
+        """
+        create a session and return the session id
+        """
+        session = SessionManager.create_session()
+        return {
+            "event": "SessionCreateEvent",
+            "status": 200,
+            "session": session,
+            "data": {
+                "session": session
+            }
+        }, ResponseType.PLAYER
 
 
 # if __name__ == "__main__":
