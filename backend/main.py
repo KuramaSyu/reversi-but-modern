@@ -11,12 +11,12 @@ import random
 from utils import Grid
 print(Grid)
 from impl.session_manager import SessionManager
-from impl.event_handler import EventHandler
+from impl.event_handler import EventHandler, LobbyEventHandler
 
 
 
 
-class WebSocket(WebSocketHandler):
+class GameWebSocket(WebSocketHandler):
     _id: int = -1
     _session: str|None = None
 
@@ -52,6 +52,43 @@ class WebSocket(WebSocketHandler):
         print(f"WebSocket with id {self._id} closed")
 
 
+
+class LobbyWebSocket(WebSocketHandler):
+    _id: int = -1
+    _session: str|None = None
+
+    def __init__(self, *args, **kwargs: Any) -> None:
+        self.event_handler: LobbyEventHandler = LobbyEventHandler(self)
+        super().__init__(*args, **kwargs)
+
+    def check_origin(self, origin):
+        return True
+
+    def to_json(self, data, action: str, status: int = 200):
+        return {
+            "status": status,
+            "data": data,
+            "action": action,
+            "timestamp": datetime.now().timestamp(),
+            "sender": "server"
+        }
+    def open(self):
+        self._id = SessionManager.get_ws_id()
+        SessionManager.websockets[self._id] = self
+        print(f"WebSocket with id {self._id} opened")
+
+    async def on_message(self, message):
+        print(f"Lobby Message received from {self._id}: {message}")
+        await self.event_handler.dispatch(message)
+
+    def on_close(self):
+        del SessionManager.websockets[self._id]
+        if self._session is not None:
+            SessionManager.remove_session_ws(self._session, self._id)
+            print(f"WebSocket with id {self._id} removed from session {self._session}")
+        print(f"WebSocket with id {self._id} closed")
+
+
 class CreateSessionHandler(RequestHandler):
     def __init__(self, *args, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -74,8 +111,9 @@ class CreateSessionHandler(RequestHandler):
 
 def make_app():
     return tornado.web.Application([
-        (r"/chat", WebSocket),
-        (r"/create_session", CreateSessionHandler)
+        (r"/chat", GameWebSocket),
+        (r"/create_session", CreateSessionHandler),
+        (r"/lobby", LobbyWebSocket),
     ])
 
 async def main():
