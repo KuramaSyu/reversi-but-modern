@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {CopyToClipboard} from 'react-copy-to-clipboard';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import {ReactComponent as CopySvg} from '../svg/copy.svg';
 
 const Lobby: React.FC = () => {
@@ -11,6 +11,10 @@ const Lobby: React.FC = () => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [userIds, setUserIds] = useState<Array<number>>([]);
   const [playButtonClicked, setPlayButtonClicked] = useState(false);
+  const { session_id } = useParams<{ session_id: string }>();
+  if (session_id !== "0" && session_id !== undefined && session_id !== sessionCode) {
+    setSessionCode(session_id);
+  }
   // generate a random 16 digit number
   const custom_id: number = Math.floor(1000000000000000 + Math.random() * 9000000000000000);
 
@@ -19,15 +23,28 @@ const Lobby: React.FC = () => {
       // Establish WebSocket connection
       const socket = new WebSocket('ws://localhost:8888/lobby');
       setWs(socket);
-      // join lobby
-      socket.onopen = () => {
-        // create new session code
-        socket.send(JSON.stringify({
-          event: 'SessionCreateEvent',
-        }));
-
-
-      };
+      
+      
+      if (session_id == "0") {
+        // join lobby
+        socket.onopen = () => {
+          // create new session code
+          socket.send(JSON.stringify({
+            event: 'SessionCreateEvent',
+          }));
+        };
+      } else {
+        // join lobby with session code
+        socket.onopen = () => {
+          socket.send(JSON.stringify(
+            {
+            event: 'SessionJoinEvent',
+            session: sessionCode,
+            custom_id: custom_id,
+            }
+          ));
+        }
+      }
       // Handle WebSocket messages
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
@@ -39,18 +56,23 @@ const Lobby: React.FC = () => {
         }
         // handle session create event
         if (data.event === 'SessionCreateEvent' && data.status === 200) {
-          setSessionCode(data.session);
+          // setSessionCode(data.session);
+          navigate(`/lobby/${data.session}`);
           socket.send(JSON.stringify({
             event: 'SessionJoinEvent',
             session: data.session,
             custom_id: custom_id,
           }));
-      };
+        }
+        // handle game start event
+        if (data.event === 'GameStartEvent' && data.status === 200 && data.session_id === joinedSessionCode) {
+          navigate(`/game/${data.session}`);
+        }
 
       // Cleanup WebSocket connection on component unmount
       return () => {
         socket.close();
-      };
+      }
       } 
     }, []);
 
@@ -78,12 +100,19 @@ const Lobby: React.FC = () => {
             <CopySvg className={`w-full h-full mx-10 p-4 rounded-3xl 
              border-highlight-c border-solid border-[1px]
             hover:bg-highlight-c transition duration-300 ease-in cursor-pointer
-            ${copied === sessionCode? "bg-d fill-highlight-a":"bg-d fill-a"}`} />
+            ${copied === joinedSessionCode? "bg-d fill-highlight-a":"bg-d fill-a"}`} />
           </div>
         </CopyToClipboard>
       </div>
       <div className='flex relative'
-      onClick={() => navigate(`/game/${joinedSessionCode}`)}>
+      onClick={() => {
+        if (ws !== null) {
+          ws.send(JSON.stringify({
+            event: 'GameStartEvent',
+            session: joinedSessionCode,
+          }));
+        }
+      }}>
           <div className='relative border-highlight-c border-solid border-[1px] py-4 px-4 
           rounded-3xl z-10 font-thin hover:text-c hover:bg-highlight-c transition duration-300 ease-in cursor-pointer'>
             PLAY
@@ -94,6 +123,6 @@ const Lobby: React.FC = () => {
 
     </div>
   );
-};
+}
 
 export default Lobby;
