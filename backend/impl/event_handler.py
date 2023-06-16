@@ -226,6 +226,9 @@ class LobbyEventHandler:
                 "session": session
             }
         }, ResponseType.PLAYER
+    
+    async def game_start_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
+        ...
 
 
 # if __name__ == "__main__":
