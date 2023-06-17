@@ -7,6 +7,7 @@ from tornado import httputil
 from tornado.websocket import WebSocketHandler
 from tornado.web import RequestHandler, Application
 import random
+import json 
 
 from utils import Grid
 print(Grid)
@@ -63,6 +64,9 @@ class LobbyWebSocket(WebSocketHandler):
 
     def check_origin(self, origin):
         return True
+    
+    def set_session(self, session: str):
+        self._session = session
 
     def to_json(self, data, action: str, status: int = 200):
         return {
@@ -76,6 +80,20 @@ class LobbyWebSocket(WebSocketHandler):
         self._id = SessionManager.get_ws_id()
         SessionManager.websockets[self._id] = self
         print(f"WebSocket with id {self._id} opened")
+    
+    def close(self):
+        if not self._session or not self._id:
+            return
+        # emulating a lobby left event
+        self.event_handler.dispatch(
+            json.dumps(
+                {
+                    "event": "LobbyLeftEvent",
+                    "session": self._session,
+                    "user_id": self._id,
+                }
+            )
+        )
 
     async def on_message(self, message):
         print(f"Lobby Message received from {self._id}: {message}")
