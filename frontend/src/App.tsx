@@ -48,7 +48,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`${theme} bg-a h-screen w-screen scrollbar-thin scrollbar-thumb-b scrollbar-track-highlight-a ${default_animation}`}>
+    <div className={`${theme} bg-a h-screen w-screen scrollbar-thin scrollbar-thumb-d scrollbar-track-b overflow-auto ${default_animation}`}>
       <Router>
         <TitleBar title="Reversi" theme={theme} themes={themes} onCycleTheme={cycleTheme} />
         <Routes>
