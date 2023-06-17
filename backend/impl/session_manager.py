@@ -22,14 +22,31 @@ class SessionManager:
         cls.sessions[session].append(ws)
 
     @classmethod
-    def remove_session_ws(cls, session: str, ws: WebSocketHandler) -> None:
+    def remove_session_ws(cls, session: str, ws: WebSocketHandler | None, pass_check: bool = False) -> None:
         """
         Removes a websocket from a session.
         If the session is empty, it will be deleted
+
+        Args:
+        ----
+        session: str
+            The session code
+        ws: WebSocketHandler
+            The websocket to remove
+        pass_check: bool
+            Whether to pass the check to remove empty sessions
         """
         if session not in cls.sessions:
             return
-        cls.sessions[session].remove(ws)
+        
+        if ws:
+            cls.sessions[session].remove(ws)
+        else:
+            cls.sessions[session] = []
+
+        if pass_check:
+            return
+        
         if len(cls.sessions[session]) == 0:
             del cls.sessions[session]
 
