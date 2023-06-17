@@ -163,7 +163,9 @@ class LobbyEventHandler:
         self.event_manager.add_listener("SessionCreateEvent", self.session_create_event)
         # session leave event
         self.event_manager.add_listener("SessionJoinEvent", self.session_join_event)
+        self.event_manager.add_listener("SessionLeaveEvent", self.session_leave_event)
         # game start event
+
 
 
     async def dispatch(self, event):
@@ -192,14 +194,16 @@ class LobbyEventHandler:
         """
         session = event["session"]
         if SessionManager.validate_session(session):
-            player_id = self.ws._id
+            user_id = self.ws._id
             SessionManager.add_session_ws(session, self.ws)
+            self.ws.set_session(session)
             return {
                 "event": "SessionJoinEvent",
                 "status": 200,
                 "session": session,
                 "data": {
-                    "player_id": player_id,
+                    "user_id": user_id,
+                    "all_users": [ws._id for ws in SessionManager.get_session_ws(session)],
                     "custom_id": event["custom_id"]
                 },
             }, ResponseType.SESSION
@@ -227,8 +231,32 @@ class LobbyEventHandler:
             }
         }, ResponseType.PLAYER
     
+    async def lobby_leave_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
+        """
+        create a session and return the session id
+        """
+        session = SessionManager.remove_session_ws(event["user_id"])
+        return {
+            "event": "SessionLeaveEvent",
+            "status": 200,
+            "session": session,
+            "data": {
+                "session": session,
+                "all_users": [ws._id for ws in SessionManager.get_session_ws(session)]
+            }
+        }, ResponseType.SESSION
+    
     async def game_start_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
-        ...
+        SessionManager.remove_session_ws(
+            session=event["session"],
+            ws=None,
+            pass_check=True
+        )
+        return {
+            "event": "GameStartEvent",
+            "status": 200,
+            "session": event["session"]
+        }, ResponseType.SESSION
 
 
 # if __name__ == "__main__":
