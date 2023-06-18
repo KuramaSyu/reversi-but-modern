@@ -266,100 +266,113 @@ class Board extends React.Component<BoardProps, BoardState> {
 interface ReversiProps {
     theme: string;
   }
-  
-  const Reversi: React.FC<ReversiProps> = ({ theme }) => {
-    const [messages, setMessages] = useState<string[]>([]);
-    const [inputValue, setInputValue] = useState('');
-    const [socket, setSocket] = useState<WebSocket | null>(null);
-    const [connected_session, setConnectedSession] = useState<string | null>(null);
-    const { session_id } = useParams<{ session_id: string }>();
-    // Create a ref for the Board component
-    const boardRef = useRef<Board>(null);
-    useEffect(() => {
-      const newSocket = new WebSocket('ws://localhost:8888/chat');
-      setSocket(newSocket);
-  
-      newSocket.onmessage = (event) => {
-        const message = event.data;
-        const json_event = JSON.parse(message);
-        if (json_event.event === 'SessionJoinEvent' && json_event.status === 200) {
-          setConnectedSession(json_event.session);
-          boardRef.current?.setPlayerId(json_event.data.player_id);
-        };
-        if (json_event.event === 'ChipPlacedEvent' && json_event.status === 200) {
-          // Call on_chip_placed method of the Board component
-          boardRef.current?.on_chip_placed(json_event);
-        }
-        setMessages((prevMessages) => [message, ...prevMessages]);
-      };
+
+let didInit = false;
+const Reversi: React.FC<ReversiProps> = ({ theme }) => {
+  const [messages, setMessages] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [connected_session, setConnectedSession] = useState<string | null>(null);
+  const { session_id } = useParams<{ session_id: string }>();
+  // Create a ref for the Board component
+  const boardRef = useRef<Board>(null);
+  const custom_id: number = Math.floor(1000000000000000 + Math.random() * 9000000000000000);
+
+  useEffect(() => {
+    if (didInit === false) {
+      didInit = true;
+      const newSocket = new WebSocket('ws://localhost:8888/reversi');
+      
       newSocket.onopen = (event) => {
         console.log('connected');
         newSocket.send(JSON.stringify({
           event: 'SessionJoinEvent',
           type: 'request',
-          session: session_id
+          session: session_id,
+          data: {
+            custom_id: custom_id,
+          }
           })
         );
-      };
-  
-      return () => {
-        newSocket.close();
-      };
-    }, []);
-  
-    const sendMessage = () => {
-      if (socket) {
-        socket.send(inputValue);
-        setInputValue('');
+        setSocket(newSocket);
       }
-    };
-  
-    return (
-      <div className={`${theme} flex flex-col md:flex-col space-x-4 space-y-4 my-10 justify-around px-[5%] overflow-y-visible text-highlight-c`}>
-        {/* Board Component */}
-        <div className="flex-shrink">
-          <Board ref={boardRef} theme={theme} rows={9} cols={9} socket={socket} session={session_id ?? 'FFFF'}/>
-        </div>
-  
-        <div className='flex flex-row gap-1 justify-between'>
-          <div>{connected_session? `connected to session: ${connected_session}` : 'connecting...'}</div>
-          <div>{boardRef.current?.state.player_id? `player id: ${boardRef.current?.state.player_id}` : 'no player id received yet'}</div>
-        </div>
-        {/* Websocket communication */}
-        <div className="flex-auto text-highlight-c">
-          <div
-            className={`bg-c text-center h-[63vh] text-highlight-c message-list flex-auto rounded-3xl overflow-auto transition-all 
-            duration-300 scrollbar-thin scrollbar-thumb-d scrollbar-track-b w-[80%] my-48`}
-          >
-            {messages.map((message, index) => (
-              <p key={index} className="transition-all duration-300">
-                {message}
-              </p>
-            ))}
-          </div>
-  
-          <div className="flex flex-row justify-end m-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className={`rounded-full text-highlight-c flex-auto mx-[3%] py-2 bg-d text-center border-2 border-transparent 
-              transition duration-300 focus:border-2 focus:border-highlight-b outline-none placeholder-highlight-a`}
-              placeholder="Communicate with the websocket"
-            />
-  
-            <button
-              onClick={sendMessage}
-              className={`px-10 py-2 basis[20%] transition duration-300 text-highlight-a rounded-full bg-d hover:border-red-700`}
-            >
-              Send
-            </button>
-          </div>
+
+      // handling events
+      newSocket.onmessage = (event) => {
+        const message = event.data;
+        const json_event = JSON.parse(message);
+        if (json_event.event === 'SessionJoinEvent' && json_event.status === 200 && json_event.data.custom_id === custom_id) {
+          setConnectedSession(json_event.session);
+          boardRef.current?.setPlayerId(json_event.data.player_id);
+        }
+        if (json_event.event === 'ChipPlacedEvent' && json_event.status === 200) {
+          // Call on_chip_placed method of the Board component
+          boardRef.current?.on_chip_placed(json_event);
+        }
+        setMessages((prevMessages) => [message, ...prevMessages]);
+      }
+      
+
+
+    }
+    return () => {
+      socket?.close();
+    }
+  }, []);
+
+  const sendMessage = () => {
+    if (socket) {
+      socket.send(inputValue);
+      setInputValue('');
+    }
+  }
+
+  return (
+    <div className={`${theme} flex flex-col md:flex-col space-x-4 space-y-4 my-10 justify-around px-[5%] overflow-y-visible text-highlight-c`}>
+      {/* Board Component */}
+      <div className="flex-shrink">
+        <Board ref={boardRef} theme={theme} rows={9} cols={9} socket={socket} session={session_id ?? 'FFFF'}/>
+      </div>
+
+      <div className='flex flex-row gap-1 justify-between'>
+        <div>{connected_session? `connected to session: ${connected_session}` : 'connecting...'}</div>
+        <div>{boardRef.current?.state.player_id? `player id: ${boardRef.current?.state.player_id}` : 'no player id received yet'}</div>
+      </div>
+      {/* Websocket communication */}
+      <div className="flex-auto text-highlight-c">
+        <div
+          className={`bg-c text-left text-[12px] h-[63vh] text-highlight-c message-list flex-auto rounded-3xl overflow-auto transition-all 
+          duration-300 scrollbar-thin scrollbar-thumb-d scrollbar-track-b w-[99%] my-5 py-3 px-3`}
+        >
+          {messages.map((message, index) => (
+            <p key={index} className="transition-all duration-300">
+              {message}
+            </p>
+          ))}
         </div>
 
+        <div className="flex flex-row justify-end m-2">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className={`rounded-full text-highlight-c flex-auto mx-[3%] py-2 bg-d text-center border-2 border-transparent 
+            transition duration-300 focus:border-2 focus:border-highlight-b outline-none placeholder-highlight-a`}
+            placeholder="Communicate with the websocket"
+          />
+
+          <button
+            onClick={sendMessage}
+            className={`px-10 py-2 basis[20%] transition duration-300 text-highlight-a rounded-full bg-d hover:border-red-700`}
+          >
+            Send
+          </button>
+        </div>
       </div>
-    );
-  };
+
+    </div>
+  );
+}
   
 
 export default Reversi;
