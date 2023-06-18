@@ -57,13 +57,18 @@ class SessionManager:
         return cls.sessions[session]
     
     @classmethod
-    def create_session(cls) -> str:
+    def create_session(cls, session: str | None = None) -> str:
         """
         Generates a session code which contains 4 letters
         """
         letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        code = "".join([random.choice(letters) for _ in range(4)])
+        if session is None:
+            code = "".join([random.choice(letters) for _ in range(4)])
+        else:
+            code = session
         if code in cls.sessions:
+            if session is None:
+                raise Exception(f"Session {session} already exists")
             return cls.create_session()
         cls.sessions[code] = []
         return code
@@ -74,3 +79,68 @@ class SessionManager:
         print(cls.sessions.keys())
         print(session in cls.sessions.keys())
         return session in cls.sessions.keys()
+
+
+
+class GameSessionManager(SessionManager):
+    websockets: Dict[int, WebSocketHandler] = {}
+    sessions: Dict[str, List[WebSocketHandler]] = {}
+    
+    @classmethod
+    def create_session(cls, session: str | None = None) -> str:
+        """
+        Generates a session code which contains 4 letters
+        """
+        letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        if session is None:
+            code = "".join([random.choice(letters) for _ in range(4)])
+        else:
+            code = session
+        if code in cls.sessions:
+            if session is None:
+                raise Exception(f"Session {session} already exists")
+            return cls.create_session()
+        cls.sessions[code] = []
+        return code
+    
+    @classmethod
+    def remove_session_ws(cls, session: str, ws: WebSocketHandler | None, pass_check: bool = False) -> None:
+        """
+        Removes a websocket from a session.
+        If the session is empty, it will be deleted
+
+        Args:
+        ----
+        session: str
+            The session code
+        ws: WebSocketHandler
+            The websocket to remove
+        pass_check: bool
+            Whether to pass the check to remove empty sessions
+        """
+        print("removing session ws")
+        LobbySessionManager.remove_session(session)
+        super().remove_session_ws(session, ws, pass_check)
+
+
+
+class LobbySessionManager(SessionManager):
+
+
+    @classmethod
+    def transfer_to_game(cls, session: str) -> None:
+        """
+        Transfers all websockets from a session to a game session
+        """
+        GameSessionManager.create_session(session)
+
+
+    @classmethod
+    def remove_session(cls, session: str) -> None:
+        """
+        Removes a session from the lobby
+        """
+        if session not in cls.sessions:
+            return
+        cls.remove_session_ws(session, None, True)
+        del cls.sessions[session]
