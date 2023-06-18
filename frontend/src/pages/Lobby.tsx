@@ -33,6 +33,7 @@ const Lobby: React.FC = () => {
       var socket: WebSocket; 
       if (ws === null) {
         socket = new WebSocket('ws://localhost:8888/lobby');
+        setWs(socket);
       } else {
         socket = ws;
       }
@@ -89,9 +90,15 @@ const Lobby: React.FC = () => {
           }));
         }
         // handle game start event
-        if (data.event === 'GameStartEvent' && data.status === 200 && data.session === joinedSessionCode) {
+        if (data.event === 'GameStartEvent' && data.status === 200) {
           console.log("GameStartEvent");
+          socket.close();
           navigate(`/game/${data.session}`);
+        }
+
+        // handle session leave event
+        if (data.event === 'SessionLeaveEvent' && data.status === 200) {
+          setUserIds((prevUserIds) => data.data.all_users);
         }
 
       // Cleanup WebSocket connection on component unmount
@@ -136,6 +143,8 @@ const Lobby: React.FC = () => {
             event: 'GameStartEvent',
             session: joinedSessionCode,
           }));
+        } else {
+          console.log("ws is null");
         }
       }}>
           <div className='relative border-highlight-c border-solid border-[1px] py-4 px-4 
@@ -146,10 +155,9 @@ const Lobby: React.FC = () => {
           </div>
       </div>
       <div className='flex flex-row gap-6'>
-        {}
         {userIds.map((userId) => {
           return (
-            <div key={userId} className='flex flex-col items-center justify-center'>
+            <div key={userId} className='flex flex-col items-center justify-center transition-all duration-500'>
               <div className='relative w-32 h-32'>
                 <div className='absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-full blur-xl'>
                   
