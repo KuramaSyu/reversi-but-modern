@@ -4,19 +4,24 @@ from tornado.websocket import WebSocketHandler
 import random
 import traceback
 from enum import Enum
+import logging
 
-from impl.session_manager import SessionManager
+from impl.session_manager import GameSessionManager, LobbySessionManager, SessionManager
 
 from impl.reversi.game import Game
 from impl.reversi.game_manager import ReversiManager
 
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 class ResponseType(Enum):
     SESSION = 0
     PLAYER = 1
 
 class EventManager:
-    def __init__(self, event_handler: "EventHandler"):
+    def __init__(self, event_handler: "ReversiEventHandler", session_manager: SessionManager):
+        self.log = logging.getLogger(event_handler.__class__.__name__)
+        self.session_manager = session_manager
         self.event_handler = event_handler
         self.listeners: Dict[str, List[Callable[..., Awaitable]]] = {}
 
@@ -30,12 +35,12 @@ class EventManager:
             for listener in self.listeners[event_type]:
                 response, scope = await listener(event)
                 if scope == ResponseType.SESSION:
-                    print("respond to session")
-                    for ws in SessionManager.get_session_ws(event["session"]):
-                        print(f"Sending response to {ws._id}: {response}")
+                    self.log.debug("respond to session")
+                    for ws in self.session_manager.get_session_ws(event["session"]):
+                        self.log.debug(f"Sending response to {ws._id}: {response}")
                         ws.write_message(response)
                 else:
-                    print(f"Sending response to {self.event_handler.ws._id}: {response}")
+                    self.log.debug(f"Sending response to {self.event_handler.ws._id}: {response}")
                     self.event_handler.ws.write_message(response)
 
 
@@ -48,22 +53,25 @@ class event:
         async def wrapper(*args, **kwargs):
             self_ = args[0]
             self_.event_manager.add_listener(self.event_type, fn)
-            print(self_)
             await fn(*args, **kwargs)
         return wrapper
 
 
-class EventHandler:
+class ReversiEventHandler:
     def __init__(self, ws: WebSocketHandler):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.ws = ws
-        self.event_manager = EventManager(self)
+        self.event_manager = EventManager(self, GameSessionManager)
         self.event_manager.add_listener("TurnMadeEvent", self.turn_made)
         self.event_manager.add_listener("SessionJoinEvent", self.session_join_event)
         self.event_manager.add_listener("ErrorEvent", self.error_event)
         self.event_manager.add_listener("ChipPlacedEvent", self.chip_placed_event)
+        self.event_manager.add_listener("GameReadyEvent", self.game_ready_event)
+
 
     async def dispatch(self, event):
         await self.message_receive(event)
+
 
     async def message_receive(self, event):
         # decrypt event
@@ -79,34 +87,23 @@ class EventHandler:
             }
         
         event_type = event["event"]
-        print("Event received:", event_type)
+        self.log.debug(f"Event received: {event_type}",)
         await self.event_manager.notify_listeners(event_type, event)
 
+
     async def turn_made(self):
-        print("Turn made")
+        self.log.debug("Turn made")
+
 
     async def session_join_event(self, event) -> Tuple[Dict[str, Any], ResponseType]:
         """
         check if session is valid and return status
         """
         session = event["session"]
-        if SessionManager.validate_session(session):
+        if GameSessionManager.validate_session(session):
             player_id = self.ws._id
-            SessionManager.add_session_ws(session, self.ws)
-            ReversiManager.create_game(
-                player_id_1=player_id,
-                player_id_2=12345,
-                session=session
-            )
-            return {
-                "event": "SessionJoinEvent",
-                "status": 200,
-                "session": session,
-                "data": {
-                    "player_id": player_id,
-                },
-            }, ResponseType.SESSION
-        else:
+            GameSessionManager.add_session_ws(session, self.ws)
+        else: 
             return {
                 "event": "SessionJoinEvent",
                 "status": 404,
@@ -116,6 +113,48 @@ class EventHandler:
                 }
             }, ResponseType.PLAYER
         
+        if len(GameSessionManager.sessions[session]) >= 2:
+            # game ready
+            ReversiManager.create_game(
+                player_id_1=GameSessionManager.sessions[session][0]._id,
+                player_id_2=GameSessionManager.sessions[session][1]._id,
+                session=session
+            )
+            # dispatch game ready event
+            await self.dispatch(
+                event=json.dumps({
+                    "event": "GameReadyEvent",
+                    "status": 200,
+                    "session": session,
+                    "data": {
+                        "player_id_1": GameSessionManager.sessions[session][0]._id,
+                        "player_id_2": GameSessionManager.sessions[session][1]._id,
+                    },
+                })
+            )
+        return {
+            "event": "SessionJoinEvent",
+            "status": 200,
+            "session": session,
+            "data": {
+                "custom_id": event["data"]["custom_id"], 
+                "player_id": player_id,
+            },
+        }, ResponseType.SESSION
+
+
+    async def game_ready_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
+        return {
+            "event": "GameReadyEvent",
+            "status": 200,
+            "session": event["session"],
+            "data": {
+                "player_id_1": event["data"]["player_id_1"],
+                "player_id_2": event["data"]["player_id_2"],
+            },
+         }, ResponseType.SESSION
+
+
     async def chip_placed_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
         game: Game | None = ReversiManager.get_game(event["session"])
         if game is None:
@@ -148,7 +187,7 @@ class EventHandler:
             try:
                 return json.loads(str(e)), ResponseType.PLAYER
             except json.JSONDecodeError:
-                print(error)
+                self.log.debug(error)
             
 
         
@@ -156,20 +195,21 @@ class EventHandler:
         return event, ResponseType.PLAYER
         
 
+
 class LobbyEventHandler:
     def __init__(self, ws: WebSocketHandler):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.ws = ws
-        self.event_manager = EventManager(self)
+        self.event_manager = EventManager(self, LobbySessionManager)
         self.event_manager.add_listener("SessionCreateEvent", self.session_create_event)
-        # session leave event
         self.event_manager.add_listener("SessionJoinEvent", self.session_join_event)
         self.event_manager.add_listener("SessionLeaveEvent", self.session_leave_event)
-        # game start event
-
+        self.event_manager.add_listener("GameStartEvent", self.game_start_event)
 
 
     async def dispatch(self, event):
         await self.message_receive(event)
+
 
     async def message_receive(self, event):
         # decrypt event
@@ -185,17 +225,18 @@ class LobbyEventHandler:
             }
         
         event_type = event["event"]
-        print("Event received:", event_type)
+        self.log.debug(f"Event received: {event_type}", )
         await self.event_manager.notify_listeners(event_type, event)
     
+
     async def session_join_event(self, event) -> Tuple[Dict[str, Any], ResponseType]:
         """
         check if session is valid and return status
         """
         session = event["session"]
-        if SessionManager.validate_session(session):
+        if LobbySessionManager.validate_session(session):
             user_id = self.ws._id
-            SessionManager.add_session_ws(session, self.ws)
+            LobbySessionManager.add_session_ws(session, self.ws)
             self.ws.set_session(session)
             return {
                 "event": "SessionJoinEvent",
@@ -203,7 +244,7 @@ class LobbyEventHandler:
                 "session": session,
                 "data": {
                     "user_id": user_id,
-                    "all_users": [ws._id for ws in SessionManager.get_session_ws(session)],
+                    "all_users": [ws._id for ws in LobbySessionManager.get_session_ws(session)],
                     "custom_id": event["custom_id"]
                 },
             }, ResponseType.SESSION
@@ -217,11 +258,12 @@ class LobbyEventHandler:
                 }
             }, ResponseType.PLAYER
         
+
     async def session_create_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
         """
         create a session and return the session id
         """
-        session = SessionManager.create_session()
+        session = LobbySessionManager.create_session()
         return {
             "event": "SessionCreateEvent",
             "status": 200,
@@ -231,27 +273,26 @@ class LobbyEventHandler:
             }
         }, ResponseType.PLAYER
     
-    async def lobby_leave_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
+
+    async def session_leave_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
         """
         create a session and return the session id
         """
-        session = SessionManager.remove_session_ws(event["user_id"])
+        # removing of websocket is done in main
         return {
             "event": "SessionLeaveEvent",
             "status": 200,
-            "session": session,
+            "session": event["session"],
             "data": {
-                "session": session,
-                "all_users": [ws._id for ws in SessionManager.get_session_ws(session)]
+                "session": event["session"],
+                "all_users": [ws._id for ws in LobbySessionManager.get_session_ws(event["session"])]
             }
         }, ResponseType.SESSION
     
+
     async def game_start_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
-        SessionManager.remove_session_ws(
-            session=event["session"],
-            ws=None,
-            pass_check=True
-        )
+        LobbySessionManager.transfer_to_game(event["session"])
+        self.log.debug(f"Game codes: {GameSessionManager.sessions}")
         return {
             "event": "GameStartEvent",
             "status": 200,
