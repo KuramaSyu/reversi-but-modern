@@ -8,11 +8,13 @@ from tornado.websocket import WebSocketHandler
 from tornado.web import RequestHandler, Application
 import random
 import json 
+import traceback
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 from utils import Grid
-print(Grid)
-from impl.session_manager import SessionManager
-from impl.event_handler import EventHandler, LobbyEventHandler
+from impl.session_manager import GameSessionManager, LobbySessionManager
+from impl.event_handler import ReversiEventHandler, LobbyEventHandler
 
 
 
@@ -22,35 +24,32 @@ class GameWebSocket(WebSocketHandler):
     _session: str|None = None
 
     def __init__(self, *args, **kwargs: Any) -> None:
-        self.event_handler: EventHandler = EventHandler(self)
+        self.log = logging.getLogger(self.__class__.__name__)
+        self.event_handler: ReversiEventHandler = ReversiEventHandler(self)
         super().__init__(*args, **kwargs)
 
     def check_origin(self, origin):
         return True
 
-    def to_json(self, data, action: str, status: int = 200):
-        return {
-            "status": status,
-            "data": data,
-            "action": action,
-            "timestamp": datetime.now().timestamp(),
-            "sender": "server"
-        }
     def open(self):
-        self._id = SessionManager.get_ws_id()
-        SessionManager.websockets[self._id] = self
-        print(f"WebSocket with id {self._id} opened")
+        self._id = GameSessionManager.get_ws_id()
+        GameSessionManager.websockets[self._id] = self
+        self.log.debug(f"WebSocket with id {self._id} opened")
 
     async def on_message(self, message):
-        print(f"Message received from {self._id}: {message}")
-        await self.event_handler.dispatch(message)
+        self.log.debug(f"Game Message received from {self._id}: {message}")
+        try:
+            await self.event_handler.dispatch(message)
+        except tornado.websocket.WebSocketClosedError:
+            self.log.debug("WebSocketClosedError")
+            self.on_close()
 
     def on_close(self):
-        del SessionManager.websockets[self._id]
+        del GameSessionManager.websockets[self._id]
         if self._session is not None:
-            SessionManager.remove_session_ws(self._session, self._id)
-            print(f"WebSocket with id {self._id} removed from session {self._session}")
-        print(f"WebSocket with id {self._id} closed")
+            GameSessionManager.remove_session_ws(self._session, self._id)
+            self.log.debug(f"WebSocket with id {self._id} removed from session {self._session}")
+        self.log.debug(f"WebSocket with id {self._id} closed")
 
 
 
@@ -59,6 +58,7 @@ class LobbyWebSocket(WebSocketHandler):
     _session: str|None = None
 
     def __init__(self, *args, **kwargs: Any) -> None:
+        self.log = logging.getLogger(self.__class__.__name__)
         self.event_handler: LobbyEventHandler = LobbyEventHandler(self)
         super().__init__(*args, **kwargs)
 
@@ -68,43 +68,41 @@ class LobbyWebSocket(WebSocketHandler):
     def set_session(self, session: str):
         self._session = session
 
-    def to_json(self, data, action: str, status: int = 200):
-        return {
-            "status": status,
-            "data": data,
-            "action": action,
-            "timestamp": datetime.now().timestamp(),
-            "sender": "server"
-        }
     def open(self):
-        self._id = SessionManager.get_ws_id()
-        SessionManager.websockets[self._id] = self
-        print(f"WebSocket with id {self._id} opened")
+        self._id = LobbySessionManager.get_ws_id()
+        LobbySessionManager.websockets[self._id] = self
+        self.log.debug(f"WebSocket with id {self._id} opened")
     
-    def close(self):
+    def on_close(self):
+        self.log.debug(f"Lobby WebSocket with id {self._id} closing")
         if not self._session or not self._id:
+            self.log.debug("No session or id")
             return
+        self.log.debug("removing session")
+        self.log.debug(LobbySessionManager.sessions[self._session])
+        try:
+            LobbySessionManager.remove_session_ws(self._session, self)
+        except Exception:
+            self.log.debug(traceback.format_exc())
         # emulating a lobby left event
-        self.event_handler.dispatch(
-            json.dumps(
-                {
-                    "event": "LobbyLeftEvent",
-                    "session": self._session,
-                    "user_id": self._id,
-                }
-            )
+        self.log.debug("dispatching lobby leave event")
+        event = json.dumps(
+            {
+                "event": "SessionLeaveEvent",
+                "session": self._session,
+                "user_id": self._id,
+            }
         )
+        task = asyncio.create_task(self.event_handler.dispatch(event))
+        self.log.debug(f"Lobby WebSocket with id {self._id} closed")
 
     async def on_message(self, message):
-        print(f"Lobby Message received from {self._id}: {message}")
-        await self.event_handler.dispatch(message)
-
-    def on_close(self):
-        del SessionManager.websockets[self._id]
-        if self._session is not None:
-            SessionManager.remove_session_ws(self._session, self._id)
-            print(f"WebSocket with id {self._id} removed from session {self._session}")
-        print(f"WebSocket with id {self._id} closed")
+        self.log.debug(f"Lobby Message received from {self._id}: {message}")
+        try:
+            await self.event_handler.dispatch(message)
+        except tornado.websocket.WebSocketClosedError:
+            self.log.debug("WebSocketClosedError")
+            self.on_close()
 
 
 class CreateSessionHandler(RequestHandler):
@@ -118,7 +116,7 @@ class CreateSessionHandler(RequestHandler):
         self.set_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def get(self):
-        code = SessionManager.create_session()
+        code = LobbySessionManager.create_session()
         self.write({
             "status": 200,
             "data": {
@@ -129,7 +127,7 @@ class CreateSessionHandler(RequestHandler):
 
 def make_app():
     return tornado.web.Application([
-        (r"/chat", GameWebSocket),
+        (r"/reversi", GameWebSocket),
         (r"/create_session", CreateSessionHandler),
         (r"/lobby", LobbyWebSocket),
     ])
