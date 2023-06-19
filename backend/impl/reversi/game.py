@@ -14,8 +14,8 @@ class RuleError(Exception):
 
 
 class Chip:
-    def __init__(self, Game: "Game", row: int, column: int, owner_id: int | None = None):
-        self._game = Game
+    def __init__(self, game: "Game", row: int, column: int, owner_id: int | None = None):
+        self._game = game
         self._owner_id = owner_id
         self._row = row
         self._col = column
@@ -24,10 +24,10 @@ class Chip:
         """swaps the owner id to the other player"""
         if self.owner_id is None:
             raise TypeError("Cannot swap owner id of a chip that has no owner")
-        if self.owner_id == self._game.player_id_1:
-            self._owner_id = self._game.player_id_2
+        if self.owner_id == self._game.player_1:
+            self._owner_id = self._game.player_2
         else:
-            self._owner_id = self._game.player_id_1
+            self._owner_id = self._game.player_1
     
     def __hash__(self) -> int:
         return hash((self.row, self.column))
@@ -52,7 +52,7 @@ class Chip:
         return {
             "owner_id": self.owner_id,
             "row": self.row,
-            "column": self.column
+            "column": self.column,
         }
 
     def __repr__(self) -> str:
@@ -62,6 +62,7 @@ class Chip:
     def __str__(self) -> str:
         """print chip in chess format"""
         return f"<Chip ower={self.owner_id} field={chr(self.column + 65)}{self.row + 1}"
+
     
 
 
@@ -70,10 +71,29 @@ class Board:
     Represents a board
     """
 
-    def __init__(self):
+    def __init__(self, game: "Game" ):
+        self._game = game
         self._board: List[List[Chip]] = []
 
-    def drop_chip(self, row: int, column: int, player_id: int) -> List[Chip]:
+    @property
+    def game(self) -> "Game":
+        return self._game
+
+    def count_chips(self, player_id: int) -> int:
+        """counts the chips of the given player"""
+        count = 0
+        for row in self._board:
+            for chip in row:
+                if chip.owner_id == player_id:
+                    count += 1
+        return count
+
+    def drop_chip(
+        self, 
+        row: int, 
+        column: int, 
+        player: int
+    ) -> List[Chip]:
         """
         drops a chip at the given position.
         Swaps affected chips.
@@ -85,7 +105,7 @@ class Board:
             the row of the chip
         column: int
             the column of the chip
-        player_id: int
+        player: int
             the id of the player that drops the chip
 
         Raises:
@@ -106,14 +126,67 @@ class Board:
                     {
                         "event": "RuleErrorEvent",
                         "message": "You cannot place your chip on an occupied field.",
-                        "user_id": player_id
+                        "user_id": player
                     }
                 )
             )
-        chip.owner_id = player_id
-        self._swap_chips(row, column, player_id)
+        if not self._check_if_chip_is_valid(row, column):
+            raise RuleError(
+                json.dumps(
+                    {
+                        "event": "RuleErrorEvent",
+                        "message": "You cannot place your chip here. There is no surrounding chip.",
+                        "user_id": player
+                    }
+                )
+            )
+        chip.owner_id = player
 
-    def _swap_chips(self, row: int, column: int, player_id: int) -> List[Chip]:
+        affected_chips = self._swap_chips(row, column, player)
+        return affected_chips
+
+    def _check_if_chip_is_valid(self, row: int, column: int) -> bool:
+        """
+        checks if the chip at the given position is valid.
+        A chip is valid if it is on the board and has no owner and
+        has a surrounding chip.
+        """
+        # make a list with chips which has an owner
+        surrounding_occupied_chips = []
+        for chip in self.get_surrounding_chips(row, column):
+            if not chip.owner_id is None:
+                surrounding_occupied_chips.append(chip)
+
+        if (
+            len(surrounding_occupied_chips) == 0
+            and sum(
+                self.count_chips(player) 
+                for player in [self.game.player_1, self.game.player_2]
+            ) > 0
+        ):
+            # no surrounding chip and not first chip -> invalid
+            return False
+        else:
+            # has surrounding chip or is first chip -> valid
+            return True
+
+
+    def get_surrounding_chips(self, row: int, column: int) -> List[Chip]:
+        """
+        Returns a list of all surrounding chips of the chip at the given position.
+        """
+        chips: List[Chip] = []
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                if i == 0 and j == 0:
+                    continue
+                chip = self.get_field(row + i, column + j)
+                if chip is None:
+                    continue
+                chips.append(chip)
+        return chips
+
+    def _swap_chips(self, row: int, column: int, player: int) -> List[Chip]:
         """
         flips the chips that are affected by the chip at the given position.
         This also checks if the move is valid.
@@ -145,12 +218,12 @@ class Board:
         affected_chips: Set[Chip] = set()
         for direction in directions:
             for row in direction:
-                print(f"check row: {str(row)}")
+                # print(f"check row: {str(row)}")
                 start = False
                 end = False
                 for chip in row:
                     # start when first player chip is found
-                    if chip.owner_id == player_id:
+                    if chip.owner_id == player:
                         start = True
                     # skip rest when not started
                     if not start:
@@ -158,21 +231,11 @@ class Board:
                     # mark end after the first empty chip is found
                     if chip.owner_id is None:
                         end = True
-                    # raise error if a non empty chip is found after the end
+                    # skip after a None chip was found
                     if end:
-                        if not chip.owner_id is None:
-                            raise RuleError(
-                                json.dumps(
-                                    {
-                                        "event": "RuleErrorEvent",
-                                        "message": "You have to place your chip next to an enemy chip.",
-                                        "user_id": player_id
-                                    }
-                                )
-                            )
                         continue
                     # continue when chip does not need to be swapped
-                    if chip.owner_id == player_id:
+                    if chip.owner_id == player:
                         continue
                     # add chip to affected chips
                     print(f"affect chip: {str(chip)}")
@@ -181,7 +244,7 @@ class Board:
         print(f"affected chips: {str(affected_chips)}")
         for chip in affected_chips:
             chip.swap_user_id()
-        return affected_chips
+        return list(affected_chips)
     
     @property
     def board(self) -> List[Chip]:
@@ -192,30 +255,33 @@ class Board:
         self._board = value
 
     @staticmethod
-    def _generate_board(rows: int, columns: int) -> "Board":
+    def _generate_board(game: "Game", rows: int, columns: int) -> "Board":
         """generates a new state"""
         board = []
-        self = Board()
+        self = Board(game)
         for row in range(rows):
             board.append([])
             for column in range(columns):
                 board[-1].append(
-                    Chip(Game=self, row=row, column=column)
+                    Chip(game=game, row=row, column=column)
                 )
         self.board = board
         return self
     
     @classmethod
-    def DEFAULT(cls) -> "Board":
+    def DEFAULT(cls, game: "Game") -> "Board":
         """returns the default state"""
-        return cls._generate_board(8, 8)
+        return cls._generate_board(game, 8, 8)
     
     def __repr__(self) -> str:
         return f"<Board board={repr(self.board)}>"
     
-    def get_field(self, row: int, column: int) -> Chip:
+    def get_field(self, row: int, column: int) -> Chip | None:
         """returns the field at the given position"""
-        return self.board[row][column]
+        try:
+            return self.board[row][column]
+        except IndexError:
+            return None
 
 
 
@@ -225,24 +291,23 @@ class Game:
             self,
             player_1: int,
             player_2: int,
-            board: Board = Board.DEFAULT()
     ): 
         self._player_1 = player_1
         self._player_2 = player_2
-        #self._current_player_id = random.choice([player_1, player_2])
-        self._current_player_id = player_1
-        self._board = board
+        #self._current_player = random.choice([player_1, player_2])
+        self._current_player = player_1
+        self._board: Board | None = None
 
     @property
     def current_player(self) -> int:
-        return self._current_player_id
+        return self._current_player
     
     def _swap_current_player(self) -> None:
         """swaps the current player"""
         if self.current_player == self.player_1:
-            self._current_player_id = self.player_2
+            self._current_player = self.player_2
         else:
-            self._current_player_id = self.player_1
+            self._current_player = self.player_1
     
     @property
     def player_1(self) -> int:
@@ -251,10 +316,15 @@ class Game:
     @property
     def player_2(self) -> int:
         return self._player_2
+
     
     @property
     def board(self) -> Board:
         return self._board
+    
+    @board.setter
+    def board(self, value: Board) -> None:
+        self._board = value
     
     def place_chip(self, row: int, column: int, player: int) -> List[Chip]:
         """
@@ -268,7 +338,7 @@ class Game:
             the row of the chip
         column: int
             the column of the chip
-        player_id: int
+        player: int
             the id of the player that drops the chip
 
         Raises:
@@ -302,16 +372,17 @@ class Game:
             "data": {
                 "row": row,
                 "column": column,
-                "swapped_chips": swapped_chips
+                "swapped_chips": [chip.to_json() for chip in swapped_chips]
             },
             "status": 200
         }
     
     @classmethod
-    def DEFAULT(cls, player_id_1: int, player_id_2: int) -> "Game":
+    def DEFAULT(cls, player_1: int, player_2: int) -> "Game":
         """returns the default game"""
-        return cls(
-            player_1=player_id_1,
-            player_2=player_id_2,
-            board=Board.DEFAULT()
+        self = cls(
+            player_1=player_1,
+            player_2=player_2,
         )
+        self.board = Board.DEFAULT(self)
+        return self
