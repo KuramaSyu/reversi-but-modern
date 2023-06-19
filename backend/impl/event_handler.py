@@ -166,22 +166,12 @@ class ReversiEventHandler:
                 "session": event["session"]
             }, ResponseType.PLAYER
         try:
-            swapped_chips = game.place_chip(
+            response = game.place_chip(
                 row=event["data"]["row"],
-                column=event["data"]["col"],
+                column=event["data"]["column"],
                 player=event["user_id"]
             )
-            return {
-                "event": "ChipPlacedEvent",
-                "status": 200,
-                "session": event["session"],
-                "data": {
-                    "row": event["data"]["row"],
-                    "col": event["data"]["col"],
-                    "swapped_chips": swapped_chips,
-                    "player": game.current_player
-                },
-            }, ResponseType.SESSION
+            return response, ResponseType.SESSION
         except Exception as e:
             error = traceback.format_exc()
             try:
