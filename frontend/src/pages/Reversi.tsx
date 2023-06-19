@@ -42,7 +42,7 @@ class Chip extends React.Component<ChipProps> {
 
 class ChipPlacedEvent {
   user_id: number;
-  data: { row: number; col: number };
+  data: { row: number; column: number; swapped_chips: Array<{ row: number; column: number; owner_id: number}>};
   session: string;
   event: string = "ChipPlacedEvent";
   type: string = "request";
@@ -52,7 +52,8 @@ class ChipPlacedEvent {
     this.user_id = user_id;
     this.data = {
       row: row,
-      col: col,
+      column: col,
+      swapped_chips: [],
     };
     this.session = session ?? 'test00session';
   }
@@ -75,31 +76,48 @@ class Board extends React.Component<BoardProps, BoardState> {
     current_chip_number: number = 1;
 
     constructor(props: BoardProps) {
-        super(props);
-        this.state = {
-        active_row: -1,
-        active_col: -1,
-        clicked_row: -1,
-        clicked_col: -1,
-        screen_height: window.innerHeight,
-        rotation: 0,
-        player_id: null,
-        };  
-        this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
-        this.unactive_attrs = "text-highlight-b font-extralight text-xl";
+      super(props);
+      this.state = {
+      active_row: -1,
+      active_col: -1,
+      clicked_row: -1,
+      clicked_col: -1,
+      screen_height: window.innerHeight,
+      rotation: 0,
+      player_id: null,
+      };  
+      this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
+      this.unactive_attrs = "text-highlight-b font-extralight text-xl";
     }
 
     on_chip_placed(event: ChipPlacedEvent) {
 
-        if (event.status !== 200) {
-            console.log("Error: ", event);
-            return;
+      if (event.status !== 200) {
+        console.log("Error: ", event);
+        return;
+      }
+      const row = event.data.row;
+      const col = event.data.column;
+      this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
+      const swappedChips: Array<{ row: number, column: number, owner_id: number }> = event.data.swapped_chips;
+      // remove every chip from board that is in swapped chips
+      swappedChips.forEach(
+        (chip) => {
+          this.board = this.board.filter(
+            (board_chip) => {
+              return board_chip.row !== chip.row && board_chip.col !== chip.column
+            }
+          )
         }
-        const row = event.data.row;
-        const col = event.data.col;
-        this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
-        this.cyclePlayer();
-        this.forceUpdate( )
+      );
+      // add swapped chips to board
+      swappedChips.forEach(
+        (chip) => {
+          this.board.push({ row: chip.row, col: chip.column, chip: this.chips[this.current_chip_number]})
+        }
+      );
+      this.cyclePlayer();
+      this.forceUpdate();
     }
 
     setPlayerId(id: number) {
@@ -274,6 +292,7 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [connected_session, setConnectedSession] = useState<string | null>(null);
   const { session_id } = useParams<{ session_id: string }>();
+  const [ playerID, setPlayerID ] = useState<number | null>(null);
   // Create a ref for the Board component
   const boardRef = useRef<Board>(null);
   const custom_id: number = Math.floor(1000000000000000 + Math.random() * 9000000000000000);
@@ -304,6 +323,7 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
         if (json_event.event === 'SessionJoinEvent' && json_event.status === 200 && json_event.data.custom_id === custom_id) {
           setConnectedSession(json_event.session);
           boardRef.current?.setPlayerId(json_event.data.player_id);
+          setPlayerID(json_event.data.player_id);
         }
         if (json_event.event === 'ChipPlacedEvent' && json_event.status === 200) {
           // Call on_chip_placed method of the Board component
@@ -336,7 +356,7 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
 
       <div className='flex flex-row gap-1 justify-between'>
         <div>{connected_session? `connected to session: ${connected_session}` : 'connecting...'}</div>
-        <div>{boardRef.current?.state.player_id? `player id: ${boardRef.current?.state.player_id}` : 'no player id received yet'}</div>
+        <div>{playerID? `player id: ${playerID}` : 'No player ID received yet'}</div>
       </div>
       {/* Websocket communication */}
       <div className="flex-auto text-highlight-c">
