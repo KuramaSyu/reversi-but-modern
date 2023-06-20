@@ -13,10 +13,11 @@ class ReversiManager:
     _games: Dict[str, Game] = {}
         
     @classmethod
-    def create_game(cls, player_id_1: int, player_id_2: int, session: str) -> str:
+    def create_game(cls, player_id_1: int, player_id_2: int, session: str) -> Game:
         """creates a new game and returns its id"""
         game = Game.DEFAULT(player_id_1, player_id_2)
         cls._games[session] = game
+        return game
         
     @classmethod
     def get_game(cls, session: str) -> Optional[Game]:
