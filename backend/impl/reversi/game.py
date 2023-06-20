@@ -3,6 +3,7 @@ from typing import *
 from typing import Any
 import random
 import json
+from pprint import pprint
 
 from utils import Grid
 
@@ -62,7 +63,12 @@ class Chip:
     
     def __str__(self) -> str:
         """print chip in chess format"""
-        return f"<Chip ower={self.owner_id} field={chr(self.column + 65)}{self.row + 1}"
+        return f"<Chip ower={self.owner_id} field={self.field_name}"
+    
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, Chip):
+            return False
+        return self.row == __value.row and self.column == __value.column
     
     @property
     def field_name(self) -> str:
@@ -150,6 +156,16 @@ class Board:
         chip.owner_id = player
 
         affected_chips = self._swap_chips(row, column, player)
+        if len(affected_chips) == 0:
+            raise RuleError(
+                json.dumps(
+                    {
+                        "event": "RuleErrorEvent",
+                        "message": "You need to swap at least one chip.",
+                        "user_id": player
+                    }
+                )
+            )
         return affected_chips
 
     def _check_if_chip_is_valid(self, row: int, column: int) -> bool:
@@ -215,6 +231,7 @@ class Board:
         List[Chip] :
             A list with all the flipped Chips. The Chips have the new owner id.
         """
+        placed_chip = self.get_field(row, column)
         directions: List[List[Chip]] = [
             Grid.get_rows(self._board),
             Grid.get_cols(self._board),
@@ -225,32 +242,39 @@ class Board:
         affected_chips: Set[Chip] = set()
         for direction in directions:
             for row in direction:
-                # print(f"check row: {str(row)}")
+                if not placed_chip in row:
+                    continue
+                temp_affected_chips: Set[Chip] = set()
                 start = False
-                end = False
                 for chip in row:
                     # start when first player chip is found
-                    if chip.owner_id == player:
+                    if chip.owner_id == player and not start:
                         start = True
+                        continue
                     # skip rest when not started
                     if not start:
                         continue
-                    # mark end after the first empty chip is found
+                    # first None chip -> go to next direction
                     if chip.owner_id is None:
-                        end = True
-                    # skip after a None chip was found
-                    if end:
-                        continue
-                    # continue when chip does not need to be swapped
+                        break
+                    # second player chip is found -> add all temp chips to affected chips
                     if chip.owner_id == player:
+                        if len(temp_affected_chips) > 0:
+                            print(f"update affected chips: {[chip.field_name for chip in temp_affected_chips]}")
+                            affected_chips.update(temp_affected_chips)
+                            temp_affected_chips = set()
                         continue
                     # add chip to affected chips
-                    print(f"affect chip: {str(chip)}")
-                    affected_chips.add(chip)
+                    temp_affected_chips.add(chip)
         # swap affected chips
-        print(f"affected chips: {str(affected_chips)}")
+        print(f"affected chips: {affected_chips}")
         for chip in affected_chips:
             chip.swap_user_id()
+        for row in self._board:
+            for chip in row:
+                print(f"{chip.field_name}: {chip.owner_id}", end="\t")
+            print()
+    
         return list(affected_chips)
     
     @property
@@ -302,7 +326,7 @@ class Game:
         self._player_1 = player_1
         self._player_2 = player_2
         #self._current_player = random.choice([player_1, player_2])
-        self._current_player = player_1
+        self._current_player = random.choice([player_1, player_2])
         self._board: Board | None = None
 
     @property
