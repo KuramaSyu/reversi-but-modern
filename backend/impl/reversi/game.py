@@ -50,9 +50,10 @@ class Chip:
     
     def to_json(self) -> Dict[str, Any]:
         return {
+            "field_name": self.field_name,
             "owner_id": self.owner_id,
             "row": self.row,
-            "column": self.column,
+            "column": self.column,  
         }
 
     def __repr__(self) -> str:
@@ -62,6 +63,12 @@ class Chip:
     def __str__(self) -> str:
         """print chip in chess format"""
         return f"<Chip ower={self.owner_id} field={chr(self.column + 65)}{self.row + 1}"
+    
+    @property
+    def field_name(self) -> str:
+        """print chip in chess format"""
+        row_mapping = {index_row: 8-index_row for index_row in range(8)}
+        return f"{chr(self.column + 65)}{row_mapping[self.row]}"
 
     
 
@@ -372,6 +379,7 @@ class Game:
             "data": {
                 "row": row,
                 "column": column,
+                "field_name": Chip(self, row, column).field_name,
                 "swapped_chips": [chip.to_json() for chip in swapped_chips]
             },
             "status": 200
