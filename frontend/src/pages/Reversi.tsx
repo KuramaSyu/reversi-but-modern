@@ -295,6 +295,7 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
   const [connected_session, setConnectedSession] = useState<string | null>(null);
   const { session_id } = useParams<{ session_id: string }>();
   const [ playerID, setPlayerID ] = useState<number | null>(null);
+  const [ opponentID, setOpponentID ] = useState<number | null>(null);
   // Create a ref for the Board component
   const boardRef = useRef<Board>(null);
   const custom_id: number = Math.floor(1000000000000000 + Math.random() * 9000000000000000);
@@ -322,10 +323,14 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
       newSocket.onmessage = (event) => {
         const message = event.data;
         const json_event = JSON.parse(message);
-        if (json_event.event === 'SessionJoinEvent' && json_event.status === 200 && json_event.data.custom_id === custom_id) {
-          setConnectedSession(json_event.session);
-          boardRef.current?.setPlayerId(json_event.data.player_id);
-          setPlayerID(json_event.data.player_id);
+        if (json_event.event === 'SessionJoinEvent' && json_event.status === 200) {
+          if (json_event.data.custom_id === custom_id) {          
+            setConnectedSession(json_event.session);
+            boardRef.current?.setPlayerId(json_event.data.player_id);
+            setPlayerID(json_event.data.player_id);
+          } else {
+            setOpponentID(json_event.data.player_id);
+          }
         }
         if (json_event.event === 'ChipPlacedEvent' && json_event.status === 200) {
           // Call on_chip_placed method of the Board component
