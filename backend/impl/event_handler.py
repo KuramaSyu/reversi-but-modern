@@ -115,7 +115,7 @@ class ReversiEventHandler:
         
         if len(GameSessionManager.sessions[session]) >= 2:
             # game ready
-            ReversiManager.create_game(
+            game = ReversiManager.create_game(
                 player_id_1=GameSessionManager.sessions[session][0]._id,
                 player_id_2=GameSessionManager.sessions[session][1]._id,
                 session=session
@@ -127,8 +127,10 @@ class ReversiEventHandler:
                     "status": 200,
                     "session": session,
                     "data": {
-                        "player_id_1": GameSessionManager.sessions[session][0]._id,
-                        "player_id_2": GameSessionManager.sessions[session][1]._id,
+                        "player_1_id": GameSessionManager.sessions[session][0]._id,
+                        "player_2_id": GameSessionManager.sessions[session][1]._id,
+                        "current_player_id": game.current_player,
+                        "board": game.board.to_json(),
                     },
                 })
             )
@@ -144,15 +146,7 @@ class ReversiEventHandler:
 
 
     async def game_ready_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:
-        return {
-            "event": "GameReadyEvent",
-            "status": 200,
-            "session": event["session"],
-            "data": {
-                "player_id_1": event["data"]["player_id_1"],
-                "player_id_2": event["data"]["player_id_2"],
-            },
-         }, ResponseType.SESSION
+        return event, ResponseType.SESSION
 
 
     async def chip_placed_event(self, event: Dict[str, Any]) -> Tuple[Dict[str, Any], ResponseType]:

@@ -40,6 +40,23 @@ class Chip extends React.Component<ChipProps> {
     }
 }
 
+interface GameReadyEvent {
+  event: string;
+  status: number;
+  session: string;
+  data: { 
+    player_1_id: number; 
+    player_2_id: number; 
+    current_player_id: number; 
+    board: Array<{ 
+      row: number; 
+      column: number; 
+      owner_id: number; 
+      field_name: string
+    }>; 
+  };
+}
+
 class ChipPlacedEvent {
   user_id: number;
   data: { row: number; column: number; swapped_chips: Array<{ row: number; column: number; owner_id: number}>};
@@ -69,11 +86,16 @@ class Board extends React.Component<BoardProps, BoardState> {
     unactive_attrs: string;
     // board: list[dict[row: int, col: int, chip: Chip]]
     board: Array<{ row: number, col: number, chip: JSX.Element }> = [];
-    chips: { [key: number]: JSX.Element } = {
+    chips: Record<number, JSX.Element> = {
         1 : <Chip color="bg-highlight-a/70 border-4 border-black/40" bg_color='bg-a'/>,
         2 : <Chip color="bg-highlight-d/70 border-4 border-black/40" bg_color='bg-a' />,
     };
-    current_chip_number: number = 1;
+    chip_colors: Record<number, string> = {};
+    current_player_id: number = 0;
+    player_1_id: number = 0;
+    player_2_id: number = 0;
+    starter_id: number = 0;
+    info: string = "";
 
     constructor(props: BoardProps) {
       super(props);
@@ -85,9 +107,13 @@ class Board extends React.Component<BoardProps, BoardState> {
       screen_height: window.innerHeight,
       rotation: 0,
       player_id: null,
-      };  
+      };
       this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
       this.unactive_attrs = "text-highlight-b font-extralight text-xl";
+      this.current_player_id = 0;
+      this.player_1_id = 0;
+      this.player_2_id = 0;
+      this.starter_id = 0;
     }
 
     on_chip_placed(event: ChipPlacedEvent) {
@@ -98,7 +124,7 @@ class Board extends React.Component<BoardProps, BoardState> {
       }
       const row = event.data.row;
       const col = event.data.column;
-      this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
+      this.board.push({ row: row, col: col, chip: this.chips[this.current_player_id]});
       const swappedChips: Array<{ row: number, column: number, owner_id: number }> = event.data.swapped_chips;
       // remove every chip from board that is in swapped chips
       console.log("board before swapping: ", this.board)
@@ -115,10 +141,45 @@ class Board extends React.Component<BoardProps, BoardState> {
       // add swapped chips to board
       swappedChips.forEach(
         (chip) => {
-          this.board.push({ row: chip.row, col: chip.column, chip: this.chips[this.current_chip_number]})
+          this.board.push({ row: chip.row, col: chip.column, chip: this.chips[this.current_player_id]})
         }
       );
       this.cyclePlayer();
+      this.forceUpdate();
+    }
+
+    on_game_ready(event: GameReadyEvent, opponentID: number | null, ownID: number | null) {
+      console.log("Game ready event: ", event)
+      if (event.status !== 200) {
+        console.log("Error: ", event);
+        return;
+      }
+      const board = event.data.board;
+      this.player_1_id = event.data.player_1_id;
+      this.player_2_id = event.data.player_2_id;
+      this.current_player_id = event.data.current_player_id;
+      this.starter_id = event.data.current_player_id;
+
+      // set this.state.player_id to own id
+      this.setState({player_id: ownID ?? opponentID === this.player_1_id ? this.player_2_id : this.player_1_id});
+      this.chip_colors = {
+        [this.player_1_id] : "bg-highlight-a/70 border-4 border-black/40",
+        [this.player_2_id] : "bg-highlight-d/70 border-4 border-black/40",
+      };
+
+      this.chips = {
+        [this.player_1_id] : <Chip color="bg-highlight-a/70 border-4 border-black/40" bg_color='bg-a'/>,
+        [this.player_2_id] : <Chip color="bg-highlight-d/70 border-4 border-black/40" bg_color='bg-a' />,
+      };
+      board.forEach(
+        (chip) => {
+          this.board.push({ row: chip.row, col: chip.column, chip: this.chips[chip.owner_id]})
+        }
+      );
+      console.log("Board: ", this.board)
+      console.log("Current player id: ", this.current_player_id)
+      console.log("Own id: ", this.player_1_id)
+      console.log("Opponent id: ", this.player_2_id)
       this.forceUpdate();
     }
 
@@ -130,7 +191,7 @@ class Board extends React.Component<BoardProps, BoardState> {
     }
 
     cyclePlayer() {
-        this.current_chip_number = this.current_chip_number === 1 ? 2 : 1;
+        this.current_player_id = this.current_player_id === this.player_1_id ? this.player_2_id : this.player_1_id;
     }
 
     componentDidMount() {
@@ -259,23 +320,38 @@ class Board extends React.Component<BoardProps, BoardState> {
       const px = Math.floor(screen_height * 0.8);
       const px_rest_width = (Math.min(window.innerHeight, window.innerWidth - px) ) / 1.42 * 1;
       return (
-        <div className={`flex flex-col lg:flex-row items-center justify-center`}>
+        <div className={`flex flex-col lg:flex-row items-center justify-center gap-5`}>
             <div className={theme + " grid grid-cols-9 grid-rows-9"} style={{ height: px, width: px }}>
             {squares}
             </div>
-            <div className="flex flex-row justify-around items-center relative my-5 lg:my-0 lg:mx-5 max-h-[80vh] overflow-hidden" style={{ height: px_rest_width, width: px_rest_width }}>
-                <div
-                    className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
-                    border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
-                    ${this.current_chip_number === 1 ? 'rotate-90 border-highlight-a' : '-rotate-90 border-highlight-d'} `}
-                ></div>
-                <div className="flex rounded-full bg-b justify-center items-center text-8xl" style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
-                    A
+
+            
+            <div className='flex flex-col justify-center items-center h-full gap-5'>
+                {/* info bar */}
+                <div className='flex flex-row basis-1/4 flex-grow justify-center items-center w-full h-full bg-b rounded-2xl'>
+                  <div className='flex basis-1/2 flex-shrink text-highlight-a font-mono justify-center items-center'>{this.info ? this.info : "test"}</div>
+                  <div className='flex basis-1/2 flex-grow flex-col m-5 bg-c text-highlight-a font-mono items-left rounded-xl'>
+                    <p className='flex'>Session: {this.props.session}</p>
+                    <p className='flex'>Your ID: {this.state.player_id}</p>
+                    <p className='flex'>Opponent ID: {this.state.player_id === this.player_1_id ? this.player_2_id : this.player_1_id}</p>
+                  </div>
                 </div>
-                <div className="flex rounded-full bg-c justify-center items-center text-8xl" style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
-                    B
-                </div>
+              {/* player indicator circle */}
+              <div className="flex flex-row justify-around items-center relative my-5 lg:my-0 lg:mx-5 max-h-[70vh] overflow-hidden" style={{ height: px_rest_width, width: px_rest_width }}>
+                  <div
+                      className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
+                      border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
+                      ${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-a' : '-rotate-90 border-highlight-d'} `}>
+                  </div>
+                  <div className={`flex rounded-full ${this.chip_colors[this.player_1_id]} justify-center items-center text-5xl text-a font-bold`} style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
+                      {this.player_1_id === this.state.player_id ? 'You' : this.player_1_id}
+                  </div>
+                  <div className={`flex rounded-full ${this.chip_colors[this.player_2_id]} justify-center items-center text-5xl text-a font-bold`} style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
+                  {this.player_2_id === this.state.player_id ? 'You' : this.player_2_id}
+                  </div>
+              </div>
             </div>
+
         </div>
       );
     }
@@ -337,6 +413,9 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
           boardRef.current?.on_chip_placed(json_event);
         }
         setMessages((prevMessages) => [message, ...prevMessages]);
+        if (json_event.event === 'GameReadyEvent') {
+          boardRef.current?.on_game_ready(json_event, opponentID, playerID);
+        }
       }
       
 

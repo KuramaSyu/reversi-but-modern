@@ -4,6 +4,7 @@ from typing import Any
 import random
 import json
 from pprint import pprint
+from enum import Enum
 
 from utils import Grid
 
@@ -11,6 +12,47 @@ from utils import Grid
 class RuleError(Exception):
     """raised when a rule is violated"""
     pass
+
+
+class StartPattern:
+    """the different possible starting boards"""
+    # List[Player1List[]]
+    DIAGONAL = {
+        "player_1": [
+            {"row": 3, "column": 3},
+            {"row": 4, "column": 4}
+        ],
+        "player_2": [
+            {"row": 3, "column": 4},
+            {"row": 4, "column": 3}
+        ]
+    }
+    HORIZONTAL = {
+        "player_1": [
+            {"row": 3, "column": 3},
+            {"row": 3, "column": 4}
+        ],
+        "player_2": [
+            {"row": 4, "column": 3},
+            {"row": 4, "column": 4}
+        ]
+    }
+    VERTICAL = {
+        "player_1": [
+            {"row": 3, "column": 3},
+            {"row": 4, "column": 3}
+        ],
+        "player_2": [
+            {"row": 3, "column": 4},
+            {"row": 4, "column": 4}
+        ]
+    }
+
+
+    @classmethod
+    def random(cls) -> "StartPattern":
+        """returns a random start pattern"""
+        return random.choice([cls.DIAGONAL, cls.HORIZONTAL, cls.VERTICAL])
 
 
 
@@ -87,10 +129,15 @@ class Board:
     def __init__(self, game: "Game" ):
         self._game = game
         self._board: List[List[Chip]] = []
+        self._turn: int = 0
 
     @property
     def game(self) -> "Game":
         return self._game
+    
+    @property
+    def turn(self) -> int:
+        return self._turn
 
     def count_chips(self, player_id: int) -> int:
         """counts the chips of the given player"""
@@ -100,6 +147,16 @@ class Board:
                 if chip.owner_id == player_id:
                     count += 1
         return count
+    
+    def to_json(self, only_occupied_chips: bool = True) -> List[Dict[str, Any]]:
+        """returns the board as json"""
+        board = []
+        for row in self._board:
+            for chip in row:
+                if chip.owner_id is None and only_occupied_chips:
+                    continue
+                board.append(chip.to_json())
+        return board
 
     def drop_chip(
         self, 
@@ -138,7 +195,7 @@ class Board:
                 json.dumps(
                     {
                         "event": "RuleErrorEvent",
-                        "message": "You cannot place your chip on an occupied field.",
+                        "message": f"Field {chip.field_name} is already occupied.",
                         "user_id": player
                     }
                 )
@@ -148,15 +205,16 @@ class Board:
                 json.dumps(
                     {
                         "event": "RuleErrorEvent",
-                        "message": "You cannot place your chip here. There is no surrounding chip.",
+                        "message": f"There is no chip arround {chip.field_name}.",
                         "user_id": player
                     }
                 )
             )
+    
         chip.owner_id = player
-
         affected_chips = self._swap_chips(row, column, player)
         if len(affected_chips) == 0:
+            chip.owner_id = None
             raise RuleError(
                 json.dumps(
                     {
@@ -166,6 +224,7 @@ class Board:
                     }
                 )
             )
+        self._turn += 1
         return affected_chips
 
     def _check_if_chip_is_valid(self, row: int, column: int) -> bool:
@@ -286,7 +345,7 @@ class Board:
         self._board = value
 
     @staticmethod
-    def _generate_board(game: "Game", rows: int, columns: int) -> "Board":
+    def _generate_board(game: "Game", rows: int, columns: int, start_pattern: List[Dict[str, int]]) -> "Board":
         """generates a new state"""
         board = []
         self = Board(game)
@@ -297,12 +356,19 @@ class Board:
                     Chip(game=game, row=row, column=column)
                 )
         self.board = board
+        for player_setup in start_pattern.values():
+            for chip_coordinates in player_setup:
+                self.get_field(
+                    chip_coordinates["row"],
+                    chip_coordinates["column"]
+                ).owner_id = game.current_player
+            game._swap_current_player()
         return self
     
     @classmethod
     def DEFAULT(cls, game: "Game") -> "Board":
         """returns the default state"""
-        return cls._generate_board(game, 8, 8)
+        return cls._generate_board(game, 8, 8, start_pattern=StartPattern.random())
     
     def __repr__(self) -> str:
         return f"<Board board={repr(self.board)}>"
