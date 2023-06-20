@@ -101,15 +101,17 @@ class Board extends React.Component<BoardProps, BoardState> {
       this.board.push({ row: row, col: col, chip: this.chips[this.current_chip_number]});
       const swappedChips: Array<{ row: number, column: number, owner_id: number }> = event.data.swapped_chips;
       // remove every chip from board that is in swapped chips
+      console.log("board before swapping: ", this.board)
+      
       swappedChips.forEach(
         (chip) => {
+          console.log("removing chip:" , chip)
           this.board = this.board.filter(
-            (board_chip) => {
-              return board_chip.row !== chip.row && board_chip.col !== chip.column
-            }
+            item => !(item.row === chip.row && item.col === chip.column)
           )
         }
       );
+      console.log("board after swapping: ", this.board)
       // add swapped chips to board
       swappedChips.forEach(
         (chip) => {
