@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { TypeAnimation } from 'react-type-animation';
 
 interface BoardProps {
     theme: string;
@@ -17,6 +18,7 @@ interface BoardState {
   screen_height: number;
   rotation: number;
   player_id: number | null;
+  info: string;
 }
 
 interface ChipProps {
@@ -38,6 +40,12 @@ class Chip extends React.Component<ChipProps> {
 
         );
     }
+}
+
+interface RuleErrorEvent {
+  event: string;
+  user_id: number;
+  message: string;
 }
 
 interface GameReadyEvent {
@@ -95,7 +103,7 @@ class Board extends React.Component<BoardProps, BoardState> {
     player_1_id: number = 0;
     player_2_id: number = 0;
     starter_id: number = 0;
-    info: string = "";
+    turn: number = 5;
 
     constructor(props: BoardProps) {
       super(props);
@@ -107,6 +115,7 @@ class Board extends React.Component<BoardProps, BoardState> {
       screen_height: window.innerHeight,
       rotation: 0,
       player_id: null,
+      info: `Turn ${this.turn}`,
       };
       this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
       this.unactive_attrs = "text-highlight-b font-extralight text-xl";
@@ -116,8 +125,11 @@ class Board extends React.Component<BoardProps, BoardState> {
       this.starter_id = 0;
     }
 
-    on_chip_placed(event: ChipPlacedEvent) {
+    on_rule_error(event: RuleErrorEvent) {
+      this.setState({ info: event.message });
+    }
 
+    on_chip_placed(event: ChipPlacedEvent) {
       if (event.status !== 200) {
         console.log("Error: ", event);
         return;
@@ -144,9 +156,12 @@ class Board extends React.Component<BoardProps, BoardState> {
           this.board.push({ row: chip.row, col: chip.column, chip: this.chips[this.current_player_id]})
         }
       );
+      this.turn++;
+      this.setState({ info: `Turn ${this.turn}` });
       this.cyclePlayer();
       this.forceUpdate();
     }
+
 
     on_game_ready(event: GameReadyEvent, opponentID: number | null, ownID: number | null) {
       console.log("Game ready event: ", event)
@@ -311,45 +326,58 @@ class Board extends React.Component<BoardProps, BoardState> {
                     {/* render chip on click into the square */}
                     <div className='flex w-full h-full items-center justify-center'>{chip}</div>
                 </div>
-
-                
             </div>
             );
         }
         }
+      // calculate player info circle size
+      const shrink_percent = 0.65;
       const px = Math.floor(screen_height * 0.8);
-      const px_rest_width = (Math.min(window.innerHeight, window.innerWidth - px) ) / 1.42 * 1;
+      const px_rest_width = (Math.min(window.innerHeight, window.innerWidth - px) ) / 1.42 * 1 * shrink_percent;
+
       return (
-        <div className={`flex flex-col lg:flex-row items-center justify-center gap-5`}>
+        <div className={`flex flex-col lg:flex-row items-start justify-around h-full`}>
             <div className={theme + " grid grid-cols-9 grid-rows-9"} style={{ height: px, width: px }}>
             {squares}
             </div>
-
-            
-            <div className='flex flex-col justify-center items-center h-full gap-5'>
+            <div className='flex flex-col basis-2/5 flex-initial justify-between items-center gap-5 h-full'>
                 {/* info bar */}
-                <div className='flex flex-row basis-1/4 flex-grow justify-center items-center w-full h-full bg-b rounded-2xl'>
-                  <div className='flex basis-1/2 flex-shrink text-highlight-a font-mono justify-center items-center'>{this.info ? this.info : "test"}</div>
-                  <div className='flex basis-1/2 flex-grow flex-col m-5 bg-c text-highlight-a font-mono items-left rounded-xl'>
+                <div className='flex flex-row basis-1/5 justify-between items-center w-full h-full bg-b rounded-2xl'>
+                  <div className='flex basis-3/5 flex-shrink px-5 text-highlight-a font-mono justify-center items-center text-center w-full'>
+                      <TypeAnimation
+                        key={this.state.info}
+                        sequence={[
+                          this.state.info,
+                        ]}
+                        wrapper="div"
+                        className="w-full h-full"
+                        speed={50}
+                        repeat={0}
+                      />
+                  </div>
+                  <div className='flex basis-2/5 flex-col p-3 bg-c text-highlight-a font-mono items-left rounded-xl h-full justify-center'>
                     <p className='flex'>Session: {this.props.session}</p>
                     <p className='flex'>Your ID: {this.state.player_id}</p>
                     <p className='flex'>Opponent ID: {this.state.player_id === this.player_1_id ? this.player_2_id : this.player_1_id}</p>
                   </div>
                 </div>
               {/* player indicator circle */}
-              <div className="flex flex-row justify-around items-center relative my-5 lg:my-0 lg:mx-5 max-h-[70vh] overflow-hidden" style={{ height: px_rest_width, width: px_rest_width }}>
-                  <div
-                      className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
-                      border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
-                      ${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-a' : '-rotate-90 border-highlight-d'} `}>
-                  </div>
-                  <div className={`flex rounded-full ${this.chip_colors[this.player_1_id]} justify-center items-center text-5xl text-a font-bold`} style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
-                      {this.player_1_id === this.state.player_id ? 'You' : this.player_1_id}
-                  </div>
-                  <div className={`flex rounded-full ${this.chip_colors[this.player_2_id]} justify-center items-center text-5xl text-a font-bold`} style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
-                  {this.player_2_id === this.state.player_id ? 'You' : this.player_2_id}
-                  </div>
+              <div className='flex basis-3/4 flex-grow'>
+                <div className="flex flex-row justify-around items-center relative mr-5 lg:my-0 lg:mx-5 overflow-hidden" style={{ height: px_rest_width, width: px_rest_width }}>
+                    <div
+                        className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
+                        border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
+                        ${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
+                    </div>
+                    <div className={`flex rounded-full ${this.chip_colors[this.player_1_id]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
+                        {this.player_1_id === this.state.player_id ? 'You' : ""}
+                    </div>
+                    <div className={`flex rounded-full ${this.chip_colors[this.player_2_id]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width/2.2, width: px_rest_width/2.2 }}>
+                    {this.player_2_id === this.state.player_id ? 'You' : ""}
+                    </div>
+                </div>
               </div>
+
             </div>
 
         </div>
@@ -412,6 +440,11 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
           // Call on_chip_placed method of the Board component
           boardRef.current?.on_chip_placed(json_event);
         }
+        // handle RuleErrorEvent
+        if (json_event.event === 'RuleErrorEvent') {
+          console.log('RuleErrorEvent');
+          boardRef.current?.on_rule_error(json_event);
+        }
         setMessages((prevMessages) => [message, ...prevMessages]);
         if (json_event.event === 'GameReadyEvent') {
           boardRef.current?.on_game_ready(json_event, opponentID, playerID);
@@ -434,16 +467,18 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
   }
 
   return (
-    <div className={`${theme} flex flex-col md:flex-col space-x-4 space-y-4 my-10 justify-around px-[5%] overflow-y-visible text-highlight-c`}>
+    <div className={`${theme} flex flex-col md:flex-col space-x-4 space-y-4 my-10 justify-around pl-[2%] overflow-y-visible text-highlight-c`}>
       {/* Board Component */}
-      <div className="flex-shrink">
+      <div className="flex-auto h-[80vh]">
         <Board ref={boardRef} theme={theme} rows={9} cols={9} socket={socket} session={session_id ?? 'FFFF'}/>
       </div>
-
-      <div className='flex flex-row gap-1 justify-between'>
+      <br></br>
+      <br></br>
+      
+      {/* <div className='flex flex-row gap-1 justify-between'>
         <div>{connected_session? `connected to session: ${connected_session}` : 'connecting...'}</div>
         <div>{playerID? `player id: ${playerID}` : 'No player ID received yet'}</div>
-      </div>
+      </div> */}
       {/* Websocket communication */}
       <div className="flex-auto text-highlight-c">
         <div
