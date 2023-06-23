@@ -19,27 +19,12 @@ interface BoardState {
   rotation: number;
   player_id: number | null;
   info: string;
+  current_player_id: number;
 }
 
 interface ChipProps {
     color: string;
     bg_color: string;
-}
-
-class Chip extends React.Component<ChipProps> {
-
-    render() {
-        const { color, bg_color } = this.props;
-
-        return (
-        <div className={`items-center justify-center w-[90%] h-[90%] rounded-full ${bg_color}`}>
-            <div
-                className={`items-center justify-center transition-all duration-300 ease-out rounded-full w-full h-full ${color}`}
-            ></div>
-        </div>
-
-        );
-    }
 }
 
 interface RuleErrorEvent {
@@ -65,6 +50,34 @@ interface GameReadyEvent {
   };
 }
 
+interface NextPlayerEvent {
+  event: string;
+  data: { user_id: number; turn: number; reason: string | null };
+}
+
+interface GameOverEvent {
+  event: string;
+  data: { user_id: number; title: string; reason: string };
+}
+
+
+class Chip extends React.Component<ChipProps> {
+
+  render() {
+      const { color, bg_color } = this.props;
+
+      return (
+      <div className={`items-center justify-center w-[90%] h-[90%] rounded-full ${bg_color}`}>
+          <div
+              className={`items-center justify-center transition-all duration-300 ease-out rounded-full w-full h-full ${color}`}
+          ></div>
+      </div>
+
+      );
+  }
+}
+
+
 class ChipPlacedEvent {
   user_id: number;
   data: { row: number; column: number; swapped_chips: Array<{ row: number; column: number; owner_id: number}>};
@@ -89,6 +102,7 @@ class ChipPlacedEvent {
   }
 }
 
+
 class Board extends React.Component<BoardProps, BoardState> {
     active_attrs: string;
     unactive_attrs: string;
@@ -103,7 +117,7 @@ class Board extends React.Component<BoardProps, BoardState> {
     player_1_id: number = 0;
     player_2_id: number = 0;
     starter_id: number = 0;
-    turn: number = 5;
+    turn: number = 1;
 
     constructor(props: BoardProps) {
       super(props);
@@ -116,6 +130,8 @@ class Board extends React.Component<BoardProps, BoardState> {
       rotation: 0,
       player_id: null,
       info: `Turn ${this.turn}`,
+      current_player_id: 0,
+
       };
       this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
       this.unactive_attrs = "text-highlight-b font-extralight text-xl";
@@ -156,10 +172,23 @@ class Board extends React.Component<BoardProps, BoardState> {
           this.board.push({ row: chip.row, col: chip.column, chip: this.chips[this.current_player_id]})
         }
       );
-      this.turn++;
-      this.setState({ info: `Turn ${this.turn}` });
-      this.cyclePlayer();
+      
       this.forceUpdate();
+    }
+
+    on_next_player(event: NextPlayerEvent) {
+      this.turn = event.data.turn;
+      this.current_player_id = event.data.user_id;
+      this.setState({ 
+        info: `Turn ${this.turn}${event.data.reason ? "\n" + event.data.reason : ""}`,
+        current_player_id: event.data.user_id,
+      });
+    }
+
+    on_game_over(event: GameOverEvent) {
+      this.setState({ 
+        info: `${event.data.user_id === this.state.player_id ? "You won the game" : "Game Over"}!\n${event.data.reason}` 
+      });
     }
 
 
@@ -423,12 +452,17 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
         setSocket(newSocket);
       }
 
-      // handling events
-      newSocket.onmessage = (event) => {
-        const message = event.data;
-        const json_event = JSON.parse(message);
+    // handling events
+    newSocket.onmessage = (event) => {
+        var json_event = JSON.parse(event.data);
+
+        if (json_event.event) {
+          json_event = {events: [json_event]}
+        }
+        json_event.events.forEach((json_event: any) => {
+        const message = json_event;
         if (json_event.event === 'SessionJoinEvent' && json_event.status === 200) {
-          if (json_event.data.custom_id === custom_id) {          
+          if (json_event.data.custom_id === custom_id) {
             setConnectedSession(json_event.session);
             boardRef.current?.setPlayerId(json_event.data.player_id);
             setPlayerID(json_event.data.player_id);
@@ -436,28 +470,42 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
             setOpponentID(json_event.data.player_id);
           }
         }
+
         if (json_event.event === 'ChipPlacedEvent' && json_event.status === 200) {
           // Call on_chip_placed method of the Board component
           boardRef.current?.on_chip_placed(json_event);
         }
-        // handle RuleErrorEvent
+
         if (json_event.event === 'RuleErrorEvent') {
           console.log('RuleErrorEvent');
           boardRef.current?.on_rule_error(json_event);
         }
-        setMessages((prevMessages) => [message, ...prevMessages]);
+
         if (json_event.event === 'GameReadyEvent') {
           boardRef.current?.on_game_ready(json_event, opponentID, playerID);
         }
-      }
-      
 
+        if (json_event.event === 'NextPlayerEvent') {
+          boardRef.current?.on_next_player(json_event);
+        }
 
+        if (json_event.event === 'GameOverEvent') {
+          boardRef.current?.on_game_over(json_event);
+        }
+
+        setMessages((prevMessages) => [JSON.stringify(message), ...prevMessages]);
+      });
+    }
     }
     return () => {
       socket?.close();
     }
-  }, []);
+    }, []);
+
+      
+
+
+
 
   const sendMessage = () => {
     if (socket) {
