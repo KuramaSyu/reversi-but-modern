@@ -11,7 +11,18 @@ from utils import Grid
 
 class RuleError(Exception):
     """raised when a rule is violated"""
-    pass
+    def __init__(self, message: str, user_id: int, event: str = "RuleErrorEvent"):
+        self.error = {
+            "event": event,
+            "message": message,
+            "user_id": user_id
+        }
+        super().__init__(json.dumps(self.error))
+
+    @property
+    def to_json(self) -> str:
+        """returns the error as json"""
+        return json.dumps(self.error)
 
 
 class StartPattern:
@@ -192,37 +203,20 @@ class Board:
         chip = self.get_field(row, column)
         if not chip.owner_id is None:
             raise RuleError(
-                json.dumps(
-                    {
-                        "event": "RuleErrorEvent",
-                        "message": f"Field {chip.field_name} is already occupied.",
-                        "user_id": player
-                    }
-                )
+                message=f"Field {chip.field_name} is already occupied.", user_id=player
             )
+            
         if not self._check_if_chip_is_valid(row, column):
             raise RuleError(
-                json.dumps(
-                    {
-                        "event": "RuleErrorEvent",
-                        "message": f"There is no chip arround {chip.field_name}.",
-                        "user_id": player
-                    }
-                )
+                message=f"There is no chip arround {chip.field_name}.", user_id=player
             )
     
         chip.owner_id = player
-        affected_chips = self._swap_chips(row, column, player)
+        affected_chips = self._get_swappable_chips(chip, player)
         if len(affected_chips) == 0:
             chip.owner_id = None
             raise RuleError(
-                json.dumps(
-                    {
-                        "event": "RuleErrorEvent",
-                        "message": "You need to swap at least one chip.",
-                        "user_id": player
-                    }
-                )
+                message="You need to swap at least one chip.", user_id=player
             )
         self._turn += 1
         return affected_chips
@@ -267,8 +261,14 @@ class Board:
                     continue
                 chips.append(chip)
         return chips
+    
+    def _swap_chips(self, chips: List[Chip]) -> None:
+        """swaps the owner of the given chips"""
+        for chip in chips:
+            chip.swap_user_id()
 
-    def _swap_chips(self, row: int, column: int, player: int) -> List[Chip]:
+
+    def _get_swappable_chips(self, chip: Chip, player: int) -> List[Chip]:
         """
         flips the chips that are affected by the chip at the given position.
         This also checks if the move is valid.
@@ -290,7 +290,7 @@ class Board:
         List[Chip] :
             A list with all the flipped Chips. The Chips have the new owner id.
         """
-        placed_chip = self.get_field(row, column)
+        placed_chip = self.get_field(chip.row, chip.column)
         directions: List[List[Chip]] = [
             Grid.get_rows(self._board),
             Grid.get_cols(self._board),
@@ -327,13 +327,10 @@ class Board:
                     temp_affected_chips.add(chip)
         # swap affected chips
         print(f"affected chips: {affected_chips}")
-        for chip in affected_chips:
-            chip.swap_user_id()
         for row in self._board:
             for chip in row:
                 print(f"{chip.field_name}: {chip.owner_id}", end="\t")
             print()
-    
         return list(affected_chips)
     
     @property
@@ -452,13 +449,8 @@ class Game:
         """
         if self.current_player != player:
             raise RuleError(
-                json.dumps(
-                    {
-                        "event": "RuleErrorEvent",
-                        "user_id": player,
-                        "message": "It is not your turn",
-                    }
-                )
+                message="It's not your turn",
+                user_id=player,
             )
 
         swapped_chips = self.board.drop_chip(row, column, player)
