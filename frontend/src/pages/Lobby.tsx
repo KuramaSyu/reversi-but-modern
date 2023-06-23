@@ -126,13 +126,13 @@ const Lobby: React.FC = () => {
           </div>
         </div>
 
-        <CopyToClipboard text={joinedSessionCode}
-          onCopy={() => setCopied(joinedSessionCode)}>
+        <CopyToClipboard text={window.location.href}
+          onCopy={() => setCopied(window.location.href)}>
           <div className='w-24 h-24'>
             <CopySvg className={`w-full h-full mx-10 p-4 rounded-3xl 
              border-highlight-c border-solid border-[1px]
             hover:bg-highlight-c transition duration-300 ease-in cursor-pointer
-            ${copied === joinedSessionCode? "bg-d fill-highlight-a":"bg-d fill-a"}`} />
+            ${copied === window.location.href? "bg-d fill-highlight-a":"bg-d fill-a"}`} />
           </div>
         </CopyToClipboard>
       </div>
