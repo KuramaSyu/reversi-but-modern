@@ -35,35 +35,21 @@ class GameOverEvent:
             reason: str,
     ):
         self.event = "GameOverEvent"
-        self.winner_id = winner
-        self.title = title
-        self.reason = reason
+        self.data = {
+            "user_id": winner,
+            "title": title,
+            "reason": reason
+        }
 
-    @property
     def to_json(self) -> str:
         """returns the event as json"""
         return json.dumps(self.__dict__)
 
-    @property
     def to_dict(self) -> Dict[str, Any]:
         """returns the event as dict"""
         return self.__dict__
     
 
-class Turn:
-    def __init__(
-        self,
-        player: int,
-        turn: int,
-        chip: "Chip" | None,
-    ):
-        self.player_id = player
-        self.turn = turn
-        self.chip = chip
-    
-    @property
-    def passed_turn(self) -> bool:
-        return self.chip is None
 
 
 class StartPattern:
@@ -176,6 +162,20 @@ class Chip:
         return f"{chr(self.column + 65)}{row_mapping[self.row]}"
 
     
+class Turn:
+    def __init__(
+        self,
+        player: int,
+        turn: int,
+        chip: Chip | None,
+    ):
+        self.player_id = player
+        self.turn = turn
+        self.chip = chip
+    
+    @property
+    def passed_turn(self) -> bool:
+        return self.chip is None
 
 
 class Board:
@@ -241,7 +241,7 @@ class Board:
         # get theoretical changes or raise RuleError
         theoretically_affacted_chips: List[Chip] = []
         try:
-            theoretically_affacted_chips = self.theoretically_drop_chip(chip)
+            theoretically_affacted_chips = self.theoretically_drop_chip(chip, player, True)
         except RuleError as e:
             raise e
         
@@ -314,7 +314,8 @@ class Board:
     def theoretically_drop_chip(
         self, 
         chip: Chip,
-        player: int
+        player: int,
+        print_: bool = False,
     ) -> List[Chip]:
         """
         tries to theoretically drop a chip on the board.
@@ -355,7 +356,7 @@ class Board:
     
         # try to palce chip
         chip.owner_id = player
-        affected_chips = self._get_swappable_chips(chip, player)
+        affected_chips = self._get_swappable_chips(chip, player, print_)
         if len(affected_chips) == 0:
             chip.owner_id = None
             raise RuleError(
@@ -413,7 +414,7 @@ class Board:
             chip.swap_user_id()
 
 
-    def _get_swappable_chips(self, chip: Chip, player: int) -> List[Chip]:
+    def _get_swappable_chips(self, chip: Chip, player: int, print_: bool = False) -> List[Chip]:
         """
         flips the chips that are affected by the chip at the given position.
         This also checks if the move is valid.
@@ -438,7 +439,7 @@ class Board:
         placed_chip = chip
 
         # get all directions of the board
-        directions: List[List[Chip]] = [
+        directions: List[List[List[Chip]]] = [
             Grid.get_rows(self._board),
             Grid.get_cols(self._board),
             Grid.get_forward_diagonals(self._board),
@@ -454,6 +455,7 @@ class Board:
 
                 # reverse row, so that placed chip is the first one besides None chips
                 need_reverse = False
+                need_both = False
                 for chip in row:
                     if chip.owner_id is None:
                         continue
@@ -467,6 +469,9 @@ class Board:
                 # actual swapping
                 temp_affected_chips: Set[Chip] = set()
                 start = False
+                placed_reached = False
+                if print_:
+                    print(f"row: {row}")
                 for chip in row:
                     # start when first player chip is found
                     if chip.owner_id == player:
@@ -475,21 +480,29 @@ class Board:
                             start = True
                         else:
                             # end
-                            # add found affected chips to affected chips
+                            # add found affected chips to affected chips 
+                            # TODO: handling when chip in middle of row was placed
+                            if placed_reached:
+                                affected_chips.update(temp_affected_chips)
+                            if not chip == placed_chip:
+                                break
                             affected_chips.update(temp_affected_chips)
-                            break
+                        if chip == placed_chip:
+                            placed_reached = True
+                        continue
                     # skip rest when not started
                     if not start:
                         continue
                     # first None chip -> go to next row
                     if chip.owner_id is None:
                         break
-
-        print(f"affected chips: {affected_chips}")
-        for row in self._board:
-            for chip in row:
-                print(f"{chip.field_name}: {chip.owner_id}", end="\t")
-            print()
+                    temp_affected_chips.add(chip)
+        if print_:
+            print(f"affected chips: {affected_chips}")
+            for row in self._board:
+                for chip in row:
+                    print(f"{chip.field_name}: {chip.owner_id}", end="\t")
+                print()
         return list(affected_chips)
     
     @property
@@ -511,6 +524,7 @@ class Board:
                 board[-1].append(
                     Chip(game=game, row=row, column=column)
                 )
+        game.board = self
         self.board = board
         for player_setup in start_pattern.values():
             for chip_coordinates in player_setup:
@@ -518,8 +532,8 @@ class Board:
                     chip_coordinates["row"],
                     chip_coordinates["column"]
                 ).owner_id = game.current_player
-                self.board.turn += 1
             game._next_turn()
+        game._turn = 1
         return self
     
     @classmethod
@@ -618,6 +632,11 @@ class Game:
             A list with all the flipped Chips. The Chips have the new owner id.
         """
         return_events: List[Dict[str, Any]] = []
+        if self.game_over:
+            raise RuleError(
+                message="The game is already over",
+                user_id=player,
+            )
         if self.current_player != player:
             raise RuleError(
                 message="It's not your turn",
@@ -652,7 +671,7 @@ class Game:
         if game_over:
             self.game_over = True
             return_events.append(event.to_dict())
-            return return_events
+            return {"events": return_events}
             
         # add next player event or game over event
         if (move_amount := len(self.get_valid_moves(self.other_player))) > 0:
@@ -663,7 +682,7 @@ class Game:
                 "data": {
                     "user_id": self.current_player,
                     "turn": self.board.turn,
-                    "reason": f"Player {self.current_player} has {move_amount} possible moves",
+                    "reason": None,
                 },
             })
         else:
@@ -682,9 +701,9 @@ class Game:
                 # neither player can move
                 self.game_over = True
                 winner: int | None = None
-                if self.board.get_chip_count(self.current_player) > self.board.get_chip_count(self.other_player):
+                if self.board.count_chips(self.current_player) > self.board.count_chips(self.other_player):
                     winner = self.current_player
-                elif self.board.get_chip_count(self.current_player) < self.board.get_chip_count(self.other_player):
+                elif self.board.count_chips(self.current_player) < self.board.count_chips(self.other_player):
                     winner = self.other_player
                 return_events.append(
                     GameOverEvent(
@@ -693,7 +712,7 @@ class Game:
                         reason="Neither you nor your opponent can move. The game is over.",
                     ).to_dict()
                 )
-        return return_events
+        return {"events": return_events}
 
     
     def get_valid_moves(self, player: int) -> List[Chip]:
