@@ -162,7 +162,7 @@ const Lobby: React.FC = () => {
                 <div className='absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-full blur-xl'>
                   
                 </div>
-                <div className='relative w-full h-full border-highlight-c border-solid border-[1px] rounded-full'>
+                <div className='relative w-full h-full border-highlight-c border-solid border-[1px] rounded-full' key={userId.toString()}>
                   <p>{userId ? `${userId.toString().slice(0, 2)}\n${userId.toString().slice(2)}`:'0'}</p>
                 </div>
               </div>
