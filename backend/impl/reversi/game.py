@@ -23,6 +23,47 @@ class RuleError(Exception):
     def to_json(self) -> str:
         """returns the error as json"""
         return json.dumps(self.error)
+    
+
+
+class GameOverEvent:
+    """event that is sent when the game is over"""
+    def __init__(
+            self, 
+            winner: int,
+            title: str,
+            reason: str,
+    ):
+        self.event = "GameOverEvent"
+        self.winner_id = winner
+        self.title = title
+        self.reason = reason
+
+    @property
+    def to_json(self) -> str:
+        """returns the event as json"""
+        return json.dumps(self.__dict__)
+
+    @property
+    def to_dict(self) -> Dict[str, Any]:
+        """returns the event as dict"""
+        return self.__dict__
+    
+
+class Turn:
+    def __init__(
+        self,
+        player: int,
+        turn: int,
+        chip: "Chip" | None,
+    ):
+        self.player_id = player
+        self.turn = turn
+        self.chip = chip
+    
+    @property
+    def passed_turn(self) -> bool:
+        return self.chip is None
 
 
 class StartPattern:
@@ -73,6 +114,11 @@ class Chip:
         self._owner_id = owner_id
         self._row = row
         self._col = column
+
+    def get_surrounding_opponent_chips(self) -> bool:
+        """returns true if there is an opponent chip in the surrounding"""
+        surrounding_chips = self._game.get_surrounding_chips(self)
+
 
     def swap_user_id(self) -> None:
         """swaps the owner id to the other player"""
@@ -169,16 +215,111 @@ class Board:
                 board.append(chip.to_json())
         return board
 
-    def drop_chip(
+
+    def drop_chip(self, chip: Chip, player: int) -> List[Chip]:
+        """
+        Places a chip on the board and returns all the chips which where affected by this move
+
+        Args:
+        -----
+        chip: Chip
+            the chip to place on the board
+        player: int
+            the id of the player that drops the chip
+
+        Raises:
+        -------
+        RuleError:
+            - on wrong chip placement
+            - if the chip is placed on an occupied field
+
+        Returns:
+        --------
+        List[Chip] :
+            A list with all the chips which need to be swapped
+        """
+        # get theoretical changes or raise RuleError
+        theoretically_affacted_chips: List[Chip] = []
+        try:
+            theoretically_affacted_chips = self.theoretically_drop_chip(chip)
+        except RuleError as e:
+            raise e
+        
+        # apply theoretical changes
+        chip.owner_id = player
+        for chip in theoretically_affacted_chips:
+            chip.swap_user_id()
+        
+        return theoretically_affacted_chips
+    
+
+    @property
+    def unoccupied_fields(self) -> List[Chip]:
+        """returns a list of all unoccupied fields"""
+        return [
+            chip
+            for row in self._board
+            for chip in row
+            if chip.owner_id is None
+        ]
+    
+    def get_possible_moves(self) -> List[Chip]:
+        """returns a list of all possible moves for the given player"""
+        return [
+            chip
+            for chip in self.unoccupied_fields
+            if self.has_surrounding_chips(chip)
+        ]
+
+
+    def check_classic_game_over(self) -> Tuple[bool, GameOverEvent | None]:
+        """
+        checks if the game is over on the following conditions:
+            - no free fields left + amount of chips
+            - player can't make a valid move
+
+        """
+        # check if there are free fields left
+        if not self.unoccupied_fields:
+            opponent_amount, current_amount = self.count_chips(self.game.other_player), self.count_chips(self.game.current_player)
+            if opponent_amount > current_amount:
+                return True, GameOverEvent(
+                    winner=self.game.other_player,
+                    title=f"All Fields are occupied",
+                    reason=(
+                        f"Player {self.game.other_player} won with {opponent_amount} chips"
+                        f" against {current_amount} chips"
+                    )
+                )
+            elif opponent_amount == current_amount:
+                return True, GameOverEvent(
+                    winner=None,
+                    title=f"All Fields are occupied",
+                    reason=(
+                        f"Draw with {opponent_amount} chips"
+                    )
+                )
+            else:
+                return True, GameOverEvent(
+                    winner=self.game.current_player,
+                    title=f"All Fields are occupied",
+                    reason=(
+                        f"Player {self.game.current_player} won with {self.count_chips(self.game.current_player)} chips"
+                        f" against {self.count_chips(self.game.other_player)} chips"
+                    )
+                )
+        return False, None
+
+    
+    def theoretically_drop_chip(
         self, 
-        row: int, 
-        column: int, 
+        chip: Chip,
         player: int
     ) -> List[Chip]:
         """
-        drops a chip at the given position.
-        Swaps affected chips.
-        Raises RuleError if the move is not valid.
+        tries to theoretically drop a chip on the board.
+        This method does not change the board.
+        It only returns the chips which would be swapped if the chip would be dropped.
 
         Args:
         -----
@@ -198,19 +339,21 @@ class Board:
         Returns:
         --------
         List[Chip] :
-            A list with all the flipped Chips. The Chips have the new owner id.
+            A list with all the chips which need to be swapped
         """
-        chip = self.get_field(row, column)
+        # check if chip is already occupied
         if not chip.owner_id is None:
             raise RuleError(
                 message=f"Field {chip.field_name} is already occupied.", user_id=player
             )
-            
-        if not self._check_if_chip_is_valid(row, column):
+        
+        # check for surrounding chips
+        if not self.has_surrounding_chips(chip):
             raise RuleError(
                 message=f"There is no chip arround {chip.field_name}.", user_id=player
             )
     
+        # try to palce chip
         chip.owner_id = player
         affected_chips = self._get_swappable_chips(chip, player)
         if len(affected_chips) == 0:
@@ -218,10 +361,12 @@ class Board:
             raise RuleError(
                 message="You need to swap at least one chip.", user_id=player
             )
-        self._turn += 1
+        # revert changes
+        chip.owner_id = None
+
         return affected_chips
 
-    def _check_if_chip_is_valid(self, row: int, column: int) -> bool:
+    def has_surrounding_chips(self, chip: Chip) -> bool:
         """
         checks if the chip at the given position is valid.
         A chip is valid if it is on the board and has no owner and
@@ -229,7 +374,7 @@ class Board:
         """
         # make a list with chips which has an owner
         surrounding_occupied_chips = []
-        for chip in self.get_surrounding_chips(row, column):
+        for chip in self.get_surrounding_chips(chip.row, chip.column):
             if not chip.owner_id is None:
                 surrounding_occupied_chips.append(chip)
 
@@ -290,7 +435,9 @@ class Board:
         List[Chip] :
             A list with all the flipped Chips. The Chips have the new owner id.
         """
-        placed_chip = self.get_field(chip.row, chip.column)
+        placed_chip = chip
+
+        # get all directions of the board
         directions: List[List[Chip]] = [
             Grid.get_rows(self._board),
             Grid.get_cols(self._board),
@@ -301,31 +448,43 @@ class Board:
         affected_chips: Set[Chip] = set()
         for direction in directions:
             for row in direction:
+                # skip row if placed chip is not in it
                 if not placed_chip in row:
                     continue
+
+                # reverse row, so that placed chip is the first one besides None chips
+                need_reverse = False
+                for chip in row:
+                    if chip.owner_id is None:
+                        continue
+                    if chip == placed_chip:
+                        break
+                    else:
+                        need_reverse = True
+                if need_reverse:
+                    row.reverse()
+
+                # actual swapping
                 temp_affected_chips: Set[Chip] = set()
                 start = False
                 for chip in row:
                     # start when first player chip is found
-                    if chip.owner_id == player and not start:
-                        start = True
-                        continue
+                    if chip.owner_id == player:
+                        if not start:
+                            # start
+                            start = True
+                        else:
+                            # end
+                            # add found affected chips to affected chips
+                            affected_chips.update(temp_affected_chips)
+                            break
                     # skip rest when not started
                     if not start:
                         continue
-                    # first None chip -> go to next direction
+                    # first None chip -> go to next row
                     if chip.owner_id is None:
                         break
-                    # second player chip is found -> add all temp chips to affected chips
-                    if chip.owner_id == player:
-                        if len(temp_affected_chips) > 0:
-                            print(f"update affected chips: {[chip.field_name for chip in temp_affected_chips]}")
-                            affected_chips.update(temp_affected_chips)
-                            temp_affected_chips = set()
-                        continue
-                    # add chip to affected chips
-                    temp_affected_chips.add(chip)
-        # swap affected chips
+
         print(f"affected chips: {affected_chips}")
         for row in self._board:
             for chip in row:
@@ -359,7 +518,8 @@ class Board:
                     chip_coordinates["row"],
                     chip_coordinates["column"]
                 ).owner_id = game.current_player
-            game._swap_current_player()
+                self.board.turn += 1
+            game._next_turn()
         return self
     
     @classmethod
@@ -386,18 +546,28 @@ class Game:
             player_1: int,
             player_2: int,
     ): 
+        self.turns: List[Turn] = []
         self._player_1 = player_1
         self._player_2 = player_2
         #self._current_player = random.choice([player_1, player_2])
         self._current_player = random.choice([player_1, player_2])
         self._board: Board | None = None
+        self.game_over = False
 
     @property
     def current_player(self) -> int:
         return self._current_player
     
-    def _swap_current_player(self) -> None:
-        """swaps the current player"""
+    @property
+    def other_player(self) -> int:
+        if self.current_player == self.player_1:
+            return self.player_2
+        else:
+            return self.player_1
+    
+    def _next_turn(self) -> None:
+        """swaps the current player and increases the turn count"""
+        self.board._turn += 1
         if self.current_player == self.player_1:
             self._current_player = self.player_2
         else:
@@ -420,7 +590,7 @@ class Game:
     def board(self, value: Board) -> None:
         self._board = value
     
-    def place_chip(self, row: int, column: int, player: int) -> List[Chip]:
+    def place_chip(self, row: int, column: int, player: int) -> List[Dict[str, Any]]:
         """
         drops a chip at the given position.
         Swaps affected chips.
@@ -447,15 +617,26 @@ class Game:
         List[Chip] :
             A list with all the flipped Chips. The Chips have the new owner id.
         """
+        return_events: List[Dict[str, Any]] = []
         if self.current_player != player:
             raise RuleError(
                 message="It's not your turn",
                 user_id=player,
             )
 
-        swapped_chips = self.board.drop_chip(row, column, player)
-        self._swap_current_player()
-        return {
+        # drops chip or raises RuleError
+        swapped_chips = self.board.drop_chip(
+            chip=self.board.get_field(row, column),
+            player=player
+         )
+        self.turns.append(
+            Turn(
+                player=player,
+                turn=self.board.turn,
+                chip=self.board.get_field(row, column),
+            )
+        )
+        return_events.append({
             "event": "ChipPlacedEvent",
             "user_id": player,
             "data": {
@@ -465,8 +646,68 @@ class Game:
                 "swapped_chips": [chip.to_json() for chip in swapped_chips]
             },
             "status": 200
-        }
+        })
+        # check classic game over
+        game_over, event = self.board.check_classic_game_over()
+        if game_over:
+            self.game_over = True
+            return_events.append(event.to_dict())
+            return return_events
+            
+        # add next player event or game over event
+        if (move_amount := len(self.get_valid_moves(self.other_player))) > 0:
+            # other player has valid moves
+            self._next_turn()
+            return_events.append({
+                "event": "NextPlayerEvent",
+                "data": {
+                    "user_id": self.current_player,
+                    "turn": self.board.turn,
+                    "reason": f"Player {self.current_player} has {move_amount} possible moves",
+                },
+            })
+        else:
+            if (move_amount := len(self.get_valid_moves(self.current_player))) > 0:
+                # other player has no valid moves but current player has
+                self.board._turn += 1
+                return_events.append({
+                    "event": "NextPlayerEvent",
+                    "data": {
+                        "user_id": self.current_player,
+                        "turn": self.board.turn,
+                        "reason": f"Player {self.other_player} is not able to move",
+                    },
+                })
+            else:
+                # neither player can move
+                self.game_over = True
+                winner: int | None = None
+                if self.board.get_chip_count(self.current_player) > self.board.get_chip_count(self.other_player):
+                    winner = self.current_player
+                elif self.board.get_chip_count(self.current_player) < self.board.get_chip_count(self.other_player):
+                    winner = self.other_player
+                return_events.append(
+                    GameOverEvent(
+                        winner=winner,
+                        title="Game Over",
+                        reason="Neither you nor your opponent can move. The game is over.",
+                    ).to_dict()
+                )
+        return return_events
+
     
+    def get_valid_moves(self, player: int) -> List[Chip]:
+        """returns a list of all valid chips for the given player"""
+        fields = self.board.get_possible_moves()
+        valid_moves: List[Chip] = []
+        for field in fields:
+            try:
+                self.board.theoretically_drop_chip(field, player)
+            except RuleError:
+                continue
+            valid_moves.append(field)
+        return valid_moves
+
     @classmethod
     def DEFAULT(cls, player_1: int, player_2: int) -> "Game":
         """returns the default game"""
