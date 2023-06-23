@@ -27,7 +27,7 @@ class Grid:
         return [[c for c in r] for r in grid]
 
     @classmethod
-    def get_cols(cls, grid: List[List[T]]) -> List[Tuple[T]]:
-        return [*zip(*grid)]  ##type ignore
+    def get_cols(cls, grid: List[List[T]]) -> List[List[T]]:
+        return [list(x) for x in zip(*grid)]  ##type ignore
 
 
