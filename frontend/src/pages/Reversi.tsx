@@ -337,7 +337,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 
       return (
         <div className={`flex flex-col lg:flex-row items-start justify-around h-full`}>
-            <div className={theme + " grid grid-cols-9 grid-rows-9"} style={{ height: px, width: px }}>
+            <div className={" grid grid-cols-9 grid-rows-9 mb-5 lg:mr-5"} style={{ height: px, width: px }}>
             {squares}
             </div>
             <div className='flex flex-col basis-2/5 flex-initial justify-between items-center gap-5 h-full'>
@@ -467,18 +467,14 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
   }
 
   return (
-    <div className={`${theme} flex flex-col md:flex-col space-x-4 space-y-4 my-10 justify-around pl-[2%] overflow-y-visible text-highlight-c`}>
+    <div className={`${theme} flex flex-col md:flex-col gap-5 space-x-4 space-y-4 my-10 justify-around pl-[2%] overflow-y-visible text-highlight-c`}>
       {/* Board Component */}
-      <div className="flex-auto h-[80vh]">
+      <div className="flex-auto">
         <Board ref={boardRef} theme={theme} rows={9} cols={9} socket={socket} session={session_id ?? 'FFFF'}/>
       </div>
       <br></br>
       <br></br>
       
-      {/* <div className='flex flex-row gap-1 justify-between'>
-        <div>{connected_session? `connected to session: ${connected_session}` : 'connecting...'}</div>
-        <div>{playerID? `player id: ${playerID}` : 'No player ID received yet'}</div>
-      </div> */}
       {/* Websocket communication */}
       <div className="flex-auto text-highlight-c">
         <div
