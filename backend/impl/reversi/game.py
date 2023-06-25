@@ -476,19 +476,17 @@ class Board:
                     # start when first player chip is found
                     if chip.owner_id == player:
                         if not start:
-                            # start
                             start = True
                         else:
-                            # end
                             # add found affected chips to affected chips 
-                            # TODO: handling when chip in middle of row was placed
-                            if placed_reached:
+                            if placed_reached or chip == placed_chip:
                                 affected_chips.update(temp_affected_chips)
-                            if not chip == placed_chip:
+                            temp_affected_chips = set()
+                            if placed_reached:
                                 break
-                            affected_chips.update(temp_affected_chips)
                         if chip == placed_chip:
                             placed_reached = True
+
                         continue
                     # skip rest when not started
                     if not start:
