@@ -135,6 +135,18 @@ class Chip:
         return self._col
     
     def to_json(self) -> Dict[str, Any]:
+        """
+        Example Structure
+        -----------------
+        ```json
+        {
+            "field_name": "A1",
+            "owner_id": 1,
+            "row": 0,
+            "column": 0,
+        }
+        ```
+        """
         return {
             "field_name": self.field_name,
             "owner_id": self.owner_id,
@@ -264,7 +276,7 @@ class Board:
         ]
     
     def get_possible_moves(self) -> List[Chip]:
-        """returns a list of all possible moves for the given player"""
+        """returns a list of all allowed fields to place a chip on. No logic is applied"""
         return [
             chip
             for chip in self.unoccupied_fields
@@ -532,6 +544,10 @@ class Board:
                 ).owner_id = game.current_player
             game._next_turn()
         game._turn = 1
+        for _ in range(54):
+            valid_move = random.choice(self.get_possible_moves())
+            self.get_field(valid_move.row, valid_move.column).owner_id = game.current_player
+            self.game._next_turn()
         return self
     
     @classmethod
@@ -672,7 +688,7 @@ class Game:
             return {"events": return_events}
             
         # add next player event or game over event
-        if (move_amount := len(self.get_valid_moves(self.other_player))) > 0:
+        if len((moves := self.get_valid_moves(self.other_player))) > 0:
             # other player has valid moves
             self._next_turn()
             return_events.append({
@@ -681,11 +697,13 @@ class Game:
                     "user_id": self.current_player,
                     "turn": self.board.turn,
                     "reason": None,
+                    "valid_moves": [chip.to_json() for chip in moves],
                 },
             })
         else:
-            if (move_amount := len(self.get_valid_moves(self.current_player))) > 0:
-                # other player has no valid moves but current player has
+            # other player has no valid moves
+            if len((moves := self.get_valid_moves(self.current_player))) > 0:
+                # other player has no valid moves BUT current player has
                 self.board._turn += 1
                 return_events.append({
                     "event": "NextPlayerEvent",
@@ -693,6 +711,7 @@ class Game:
                         "user_id": self.current_player,
                         "turn": self.board.turn,
                         "reason": f"Player {self.other_player} is not able to move",
+                        "valid_moves": [chip.to_json() for chip in moves],
                     },
                 })
             else:
