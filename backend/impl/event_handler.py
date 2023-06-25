@@ -113,6 +113,7 @@ class ReversiEventHandler:
                 }
             }, ResponseType.PLAYER
         
+        self.ws._custom_id = event["data"]["custom_id"]
         if len(GameSessionManager.sessions[session]) >= 2:
             # game ready
             game = ReversiManager.create_game(
@@ -127,9 +128,18 @@ class ReversiEventHandler:
                     "status": 200,
                     "session": session,
                     "data": {
-                        "player_1_id": GameSessionManager.sessions[session][0]._id,
-                        "player_2_id": GameSessionManager.sessions[session][1]._id,
+                        "player_1": {
+                            "id": GameSessionManager.sessions[session][0]._id,
+                            "custom_id": GameSessionManager.sessions[session][0]._custom_id,
+                        },
+                        "player_2": {
+                            "id": GameSessionManager.sessions[session][1]._id,
+                            "custom_id": GameSessionManager.sessions[session][1]._custom_id,
+                        },
                         "current_player_id": game.current_player,
+                        "current_player_valid_moves": [
+                            chip.to_json() for chip in game.get_valid_moves(game.current_player)
+                        ],
                         "board": game.board.to_json(),
                     },
                 })
