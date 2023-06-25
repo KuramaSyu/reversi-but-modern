@@ -20,6 +20,7 @@ interface BoardState {
   player_id: number | null;
   info: string;
   current_player_id: number;
+  valid_moves: Array<{ row: number; column: number; owner_id: number; field_name: string }>;
 }
 
 interface ChipProps {
@@ -38,9 +39,16 @@ interface GameReadyEvent {
   status: number;
   session: string;
   data: { 
-    player_1_id: number; 
-    player_2_id: number; 
+    player_1: {
+      id: number;
+      custom_id: number;
+    }; 
+    player_2: {
+      id: number;
+      custom_id: number;
+    }; 
     current_player_id: number; 
+    current_player_valid_moves: Array<{ row: number; column: number; owner_id: number; field_name: string }>;
     board: Array<{ 
       row: number; 
       column: number; 
@@ -52,7 +60,12 @@ interface GameReadyEvent {
 
 interface NextPlayerEvent {
   event: string;
-  data: { user_id: number; turn: number; reason: string | null };
+  data: { 
+    user_id: number; 
+    turn: number; 
+    reason: string | null; 
+    valid_moves: Array<{ row: number; column: number; owner_id: number; field_name: string }> 
+  };
 }
 
 interface GameOverEvent {
@@ -122,16 +135,16 @@ class Board extends React.Component<BoardProps, BoardState> {
     constructor(props: BoardProps) {
       super(props);
       this.state = {
-      active_row: -1,
-      active_col: -1,
-      clicked_row: -1,
-      clicked_col: -1,
-      screen_height: window.innerHeight,
-      rotation: 0,
-      player_id: null,
-      info: `Turn ${this.turn}`,
-      current_player_id: 0,
-
+        active_row: -1,
+        active_col: -1,
+        clicked_row: -1,
+        clicked_col: -1,
+        screen_height: window.innerHeight,
+        rotation: 0,
+        player_id: 0,
+        info: `Turn ${this.turn}`,
+        current_player_id: 0,
+        valid_moves: [],
       };
       this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
       this.unactive_attrs = "text-highlight-b font-extralight text-xl";
@@ -183,6 +196,9 @@ class Board extends React.Component<BoardProps, BoardState> {
         info: `Turn ${this.turn}${event.data.reason ? "\n" + event.data.reason : ""}`,
         current_player_id: event.data.user_id,
       });
+      if (this.current_player_id == this.state.player_id) {
+        this.setState({ valid_moves: event.data.valid_moves });
+      }
     }
 
     on_game_over(event: GameOverEvent) {
@@ -192,20 +208,20 @@ class Board extends React.Component<BoardProps, BoardState> {
     }
 
 
-    on_game_ready(event: GameReadyEvent, opponentID: number | null, ownID: number | null) {
+    on_game_ready(event: GameReadyEvent, custom_id: number) {
       console.log("Game ready event: ", event)
       if (event.status !== 200) {
         console.log("Error: ", event);
         return;
       }
       const board = event.data.board;
-      this.player_1_id = event.data.player_1_id;
-      this.player_2_id = event.data.player_2_id;
+      this.player_1_id = event.data.player_1.id;
+      this.player_2_id = event.data.player_2.id;
       this.current_player_id = event.data.current_player_id;
       this.starter_id = event.data.current_player_id;
 
       // set this.state.player_id to own id
-      this.setState({player_id: ownID ?? opponentID === this.player_1_id ? this.player_2_id : this.player_1_id});
+
       this.chip_colors = {
         [this.player_1_id] : "bg-highlight-a/70 border-4 border-black/40",
         [this.player_2_id] : "bg-highlight-d/70 border-4 border-black/40",
@@ -220,11 +236,27 @@ class Board extends React.Component<BoardProps, BoardState> {
           this.board.push({ row: chip.row, col: chip.column, chip: this.chips[chip.owner_id]})
         }
       );
+      // update states
+      const own_id = custom_id == event.data.player_1.custom_id ? event.data.player_1.id : event.data.player_2.id;
+      // if (this.current_player_id == own_id) {
+      //   this.setState({
+          
+      //   })
+      // }
+      console.log("own id, current player id: ", own_id, this.current_player_id)
+      this.setState({
+        player_id: own_id,
+        current_player_id: this.current_player_id,
+        valid_moves: own_id == this.current_player_id ? event.data.current_player_valid_moves : [],
+      });
+
+      
+
       console.log("Board: ", this.board)
       console.log("Current player id: ", this.current_player_id)
-      console.log("Own id: ", this.player_1_id)
-      console.log("Opponent id: ", this.player_2_id)
-      this.forceUpdate();
+      console.log("player 1: ", this.player_1_id)
+      console.log("player 2: ", this.player_2_id)
+      //this.forceUpdate();
     }
 
     setPlayerId(id: number) {
@@ -333,7 +365,19 @@ class Board extends React.Component<BoardProps, BoardState> {
             // add normal squares
             const color = (row + col) % 2 === 0 ? "bg-b " : "bg-d";
             const isActive = row === clicked_row && col === clicked_col;
-            const chip = this.board.find((item) => item.row === row && item.col === col)?.chip ?? <Chip color="bg-transparent rounded-lg w-[0%] h-[0%] border-transparent" bg_color=''/>;
+            const emptyChip = <Chip color="bg-transparent rounded-lg w-[0%] h-[0%] border-transparent" bg_color=''/>;
+
+            // find chip in board for current field
+            const chip = this.board.find(
+              (item) => item.row === row && item.col === col
+            )?.chip ?? emptyChip;
+            // set hover color to red if not in valid moves
+            var hover_color = "";
+            if (chip == emptyChip) {
+              hover_color = this.state.valid_moves.some(
+                (move) => move.row === row && move.column === col
+              ) ? "hover:bg-highlight-d/50" : "hover:bg-red-500/30";
+            }
             squares.push(
             <div
                 key={`${row}-${col}`}
@@ -350,7 +394,7 @@ class Board extends React.Component<BoardProps, BoardState> {
                   handleClick(row, col);
                 }}
             >
-                <div className={`flex w-full h-full justify-center items-center hover:bg-highlight-d/50 hover:rounded-2xl 
+                <div className={`flex w-full h-full justify-center items-center ${hover_color} hover:rounded-2xl 
                 bg-transparent transition-all duration-[1200ms] ease-out hover:duration-200`}>
                     {/* render chip on click into the square */}
                     <div className='flex w-full h-full items-center justify-center'>{chip}</div>
@@ -388,6 +432,7 @@ class Board extends React.Component<BoardProps, BoardState> {
                     <p className='flex'>Session: {this.props.session}</p>
                     <p className='flex'>Your ID: {this.state.player_id}</p>
                     <p className='flex'>Opponent ID: {this.state.player_id === this.player_1_id ? this.player_2_id : this.player_1_id}</p>
+                    <p className='flex'>Possible moves: {this.state.valid_moves.length}</p>
                   </div>
                 </div>
               {/* player indicator circle */}
@@ -427,8 +472,6 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [connected_session, setConnectedSession] = useState<string | null>(null);
   const { session_id } = useParams<{ session_id: string }>();
-  const [ playerID, setPlayerID ] = useState<number | null>(null);
-  const [ opponentID, setOpponentID ] = useState<number | null>(null);
   // Create a ref for the Board component
   const boardRef = useRef<Board>(null);
   const custom_id: number = Math.floor(1000000000000000 + Math.random() * 9000000000000000);
@@ -462,12 +505,9 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
         json_event.events.forEach((json_event: any) => {
         const message = json_event;
         if (json_event.event === 'SessionJoinEvent' && json_event.status === 200) {
-          if (json_event.data.custom_id === custom_id) {
+          if (json_event.data.custom_id == custom_id) {
             setConnectedSession(json_event.session);
             boardRef.current?.setPlayerId(json_event.data.player_id);
-            setPlayerID(json_event.data.player_id);
-          } else {
-            setOpponentID(json_event.data.player_id);
           }
         }
 
@@ -482,7 +522,7 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
         }
 
         if (json_event.event === 'GameReadyEvent') {
-          boardRef.current?.on_game_ready(json_event, opponentID, playerID);
+          boardRef.current?.on_game_ready(json_event, custom_id);
         }
 
         if (json_event.event === 'NextPlayerEvent') {
