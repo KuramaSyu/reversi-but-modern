@@ -55,7 +55,8 @@ class GameWebSocket(WebSocketHandler):
 
 class LobbyWebSocket(WebSocketHandler):
     _id: int = -1
-    _session: str|None = None
+    _session: str | None = None
+    _custom_id: str | None = None
 
     def __init__(self, *args, **kwargs: Any) -> None:
         self.log = logging.getLogger(self.__class__.__name__)
