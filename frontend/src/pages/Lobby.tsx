@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {CopyToClipboard} from 'react-copy-to-clipboard';
 import {useNavigate, useParams} from 'react-router-dom';
 import {ReactComponent as CopySvg} from '../svg/copy.svg';
+import config from '../app.config.json';
+
+const backendName = config.backend.name;
+console.log(backendName);
+
+
+
 
 
 let lobby_init: boolean = false;
@@ -32,7 +39,7 @@ const Lobby: React.FC = () => {
       // Establish WebSocket connection
       var socket: WebSocket; 
       if (ws === null) {
-        socket = new WebSocket('ws://localhost:8888/lobby');
+        socket = new WebSocket(`ws://${backendName}:8888/lobby`);
         setWs(socket);
       } else {
         socket = ws;

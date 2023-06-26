@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { TypeAnimation } from 'react-type-animation';
+import config from '../app.config.json';
+
+const backendName = config.backend.name;
 
 interface BoardProps {
     theme: string;
@@ -73,7 +76,6 @@ interface GameOverEvent {
   data: { user_id: number; title: string; reason: string };
 }
 
-
 class Chip extends React.Component<ChipProps> {
 
   render() {
@@ -89,7 +91,6 @@ class Chip extends React.Component<ChipProps> {
       );
   }
 }
-
 
 class ChipPlacedEvent {
   user_id: number;
@@ -114,7 +115,6 @@ class ChipPlacedEvent {
     return JSON.stringify(this);
   }
 }
-
 
 class Board extends React.Component<BoardProps, BoardState> {
     active_attrs: string;
@@ -479,7 +479,7 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
   useEffect(() => {
     if (didInit === false) {
       didInit = true;
-      const newSocket = new WebSocket('ws://localhost:8888/reversi');
+      const newSocket = new WebSocket(`ws://${backendName}:8888/reversi`);
       
       newSocket.onopen = (event) => {
         console.log('connected');
@@ -495,8 +495,8 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
         setSocket(newSocket);
       }
 
-    // handling events
-    newSocket.onmessage = (event) => {
+      // handling events
+      newSocket.onmessage = (event) => {
         var json_event = JSON.parse(event.data);
 
         if (json_event.event) {
@@ -512,12 +512,10 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
         }
 
         if (json_event.event === 'ChipPlacedEvent' && json_event.status === 200) {
-          // Call on_chip_placed method of the Board component
           boardRef.current?.on_chip_placed(json_event);
         }
 
         if (json_event.event === 'RuleErrorEvent') {
-          console.log('RuleErrorEvent');
           boardRef.current?.on_rule_error(json_event);
         }
 
@@ -534,18 +532,13 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
         }
 
         setMessages((prevMessages) => [JSON.stringify(message), ...prevMessages]);
-      });
-    }
+       });
+      }
     }
     return () => {
       socket?.close();
     }
     }, []);
-
-      
-
-
-
 
   const sendMessage = () => {
     if (socket) {
