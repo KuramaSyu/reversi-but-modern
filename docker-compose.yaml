@@ -2,13 +2,14 @@ version: "3.8"
 services:
   reversi-backend:
     container_name: backend
-    build: backend/Dockerfile
+    build: ./backend/Dockerfile
     restart: "unless-stopped"
+    ports:
+      - "8888:8888"
     
   reversi-fontend:
     container_name: frontend
-    build: frontend/Dockerfile
+    build: ./frontend/Dockerfile
     restart: "unless-stopped"
-configs:
-  my_config:
-    file: config.yaml
+    ports:
+      - "3000:3000"
