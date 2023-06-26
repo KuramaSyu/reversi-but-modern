@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  reversi-backend:
+    container_name: backend
+    build: backend/Dockerfile
+    restart: "unless-stopped"
+    
+  reversi-fontend:
+    container_name: frontend
+    build: frontend/Dockerfile
+    restart: "unless-stopped"
+configs:
+  my_config:
+    file: config.yaml
