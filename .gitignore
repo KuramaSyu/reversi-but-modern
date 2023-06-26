@@ -198,3 +198,4 @@ yarn.lock
 
 !/frontend/src/index.css
 !/frontend/tailwind.config.js
+package.json
