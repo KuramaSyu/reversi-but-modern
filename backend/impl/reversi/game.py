@@ -544,10 +544,11 @@ class Board:
                 ).owner_id = game.current_player
             game._next_turn()
         game._turn = 1
-        for _ in range(54):
-            valid_move = random.choice(self.get_possible_moves())
-            self.get_field(valid_move.row, valid_move.column).owner_id = game.current_player
-            self.game._next_turn()
+        # fill board for debugging purposes
+        # for _ in range(54):
+        #     valid_move = random.choice(self.get_possible_moves())
+        #     self.get_field(valid_move.row, valid_move.column).owner_id = game.current_player
+        #     self.game._next_turn()
         return self
     
     @classmethod
