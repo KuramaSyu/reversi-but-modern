@@ -465,48 +465,30 @@ class Board:
                 if not placed_chip in row:
                     continue
 
-                # reverse row, so that placed chip is the first one besides None chips
-                need_reverse = False
-                need_both = False
-                for chip in row:
-                    if chip.owner_id is None:
-                        continue
-                    if chip == placed_chip:
-                        break
-                    else:
-                        need_reverse = True
-                if need_reverse:
-                    row.reverse()
-
                 # actual swapping
                 temp_affected_chips: Set[Chip] = set()
-                start = False
-                placed_reached = False
+                post_chip: bool = False
                 if print_:
                     print(f"row: {row}")
                 for chip in row:
-                    # start when first player chip is found
-                    if chip.owner_id == player:
-                        if not start:
-                            start = True
-                        else:
-                            # add found affected chips to affected chips 
-                            if placed_reached or chip == placed_chip:
-                                affected_chips.update(temp_affected_chips)
-                            temp_affected_chips = set()
-                            if placed_reached:
-                                break
+                    if post_chip:
+                        if chip.owner_id is None:
+                            break
+                        if chip.owner_id == placed_chip.owner_id:
+                            affected_chips.update(temp_affected_chips)
+                            break
+                        affected_chips.add(chip)
+                    else:
                         if chip == placed_chip:
-                            placed_reached = True
-
-                        continue
-                    # skip rest when not started
-                    if not start:
-                        continue
-                    # first None chip -> go to next row
-                    if chip.owner_id is None:
-                        break
-                    temp_affected_chips.add(chip)
+                            affected_chips.update(temp_affected_chips)
+                            temp_affected_chips = set()
+                            post_chip = True
+                            continue
+                        if chip.owner_id is None or chip.owner_id == placed_chip.owner_id:
+                            temp_affected_chips = set()
+                            continue
+                        affected_chips.add(chip)
+                        
         if print_:
             print(f"affected chips: {affected_chips}")
             for row in self._board:
