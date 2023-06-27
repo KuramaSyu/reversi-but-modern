@@ -468,6 +468,7 @@ class Board:
                 # actual swapping
                 temp_affected_chips: Set[Chip] = set()
                 post_chip: bool = False
+                first_own_chip_found: bool = False
                 if print_:
                     print(f"row: {row}")
                 for chip in row:
@@ -477,17 +478,24 @@ class Board:
                         if chip.owner_id == placed_chip.owner_id:
                             affected_chips.update(temp_affected_chips)
                             break
-                        affected_chips.add(chip)
+                        temp_affected_chips.add(chip)
                     else:
                         if chip == placed_chip:
                             affected_chips.update(temp_affected_chips)
                             temp_affected_chips = set()
                             post_chip = True
                             continue
-                        if chip.owner_id is None or chip.owner_id == placed_chip.owner_id:
+                        if chip.owner_id is None:
                             temp_affected_chips = set()
                             continue
-                        affected_chips.add(chip)
+                        if chip.owner_id == placed_chip.owner_id:
+                            if first_own_chip_found:
+                                temp_affected_chips = set()
+                            else:
+                                first_own_chip_found = True
+                            continue
+                        if first_own_chip_found:
+                            affected_chips.add(chip)
                         
         if print_:
             print(f"affected chips: {affected_chips}")
