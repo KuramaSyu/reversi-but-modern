@@ -15,11 +15,6 @@ const default_animation = 'transition duration-1000 ease-out';
 const TitleBar: React.FC<TitleBarProps> = ({ title, theme, themes, onCycleTheme }) => {
 	const navigate = useNavigate();
 	const onDiscordLogin = () => {
-		oauth.tokenRequest({
-			code: "query code",
-			scope: "identify",
-			grantType: "authorization_code",
-		}).then(console.log).catch(console.error);
 	}
 	return (
 		<div className={`relative title-bar bg-b text-highlight-c flex justify-between ${default_animation}`}>
