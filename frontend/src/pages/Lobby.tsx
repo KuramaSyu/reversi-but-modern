@@ -234,9 +234,10 @@ const Lobby: React.FC = () => {
 		<div
 			className="flex flex-col text-6xl text-highlight-a justify-center w-full h-[70%]
       		items-center text-center gap-24 py-10 scrollbar-thin scrollbar-thumb-d scrollbar-track-b overflow-auto"
+			key={joinedSessionCode}
 		>
-			<SessionCodeDisplay sessionCode={joinedSessionCode} key={joinedSessionCode} />
-			<PlayButton websocket={ws} joinedSessionCode={joinedSessionCode} key={joinedSessionCode} />
+			<SessionCodeDisplay sessionCode={joinedSessionCode}  />
+			<PlayButton websocket={ws} joinedSessionCode={joinedSessionCode} />
 			<LobbyPlayers userIds={userIds} />
 			{/* <div className="rounded-3xl bg-b mx-10 font-mono text-sm px-3 py-3 text-left">
 				{serverMessages.map((message) => {
