@@ -3,9 +3,117 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useNavigate, useParams } from "react-router-dom";
 import { ReactComponent as CopySvg } from "../svg/copy.svg";
 import config from "../app.config.json";
+import { join } from "path";
 
 const backendName = config.backend.name;
 console.log(backendName);
+
+interface SessionCodeDisplayProps {
+	sessionCode: string;
+}
+
+
+const PlayButton: React.FC<{websocket: WebSocket | null; joinedSessionCode: string | null;}> = ({websocket, joinedSessionCode}) => {
+	const [ws, setWs] = useState<WebSocket | null>(websocket);
+	const [_joinedSessionCode, _setJoinedSessionCode] = useState<string | null>(joinedSessionCode);
+	return (
+		<div
+			className="flex relative"
+			onClick={() => {
+				if (ws !== null) {
+					ws.send(
+						JSON.stringify({
+							event: "GameStartEvent",
+							session: _joinedSessionCode,
+						})
+					);
+				} else {
+					console.log("ws is null");
+				}
+			}}
+		>
+			<div
+				className="relative border-highlight-c border-solid border-[1px] py-4 px-4 
+  rounded-3xl z-10 font-thin hover:text-c hover:bg-highlight-c transition duration-300 ease-in cursor-pointer"
+			>
+				PLAY
+			</div>
+			<div className="absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-3xl blur-xl"></div>
+		</div>
+	)
+}
+
+const SessionCodeDisplay: React.FC<SessionCodeDisplayProps> = ({ sessionCode }) => {
+	const [copied, setCopied] = useState("");
+	const [joinedSessionCode, setJoinedSessionCode] = useState(sessionCode);
+	return (
+		<div className="flex flex-row">
+			<div className="relative">
+				<div className="relative flex border-highlight-c border-solid border-[1px] py-4 px-4 rounded-3xl">
+					<p className="font-light">Lobby Code: </p>
+					<input
+						type="text"
+						className="flex z-10 w-56 text-center border-none outline-none justify-center font-light bg-transparent"
+						value={joinedSessionCode}
+						onChange={(e) => setJoinedSessionCode(e.target.value)}
+					/>
+				</div>
+				<div className="absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-3xl blur-xl"></div>
+			</div>
+			{/* Copy Icon */}
+			<CopyToClipboard
+				text={window.location.href}
+				onCopy={() => setCopied(window.location.href)}
+			>
+				<div className="w-24 h-24">
+					<CopySvg
+						className={`w-full h-full mx-10 p-4 rounded-3xl 
+					border-highlight-c border-solid border-[1px]
+					hover:fill-highlight-a/50 transition duration-300 ease-out cursor-pointer
+					${copied === window.location.href ? "fill-a bg-highlight-d" : "bg-d fill-a"}`}
+					/>
+				</div>
+			</CopyToClipboard>
+		</div>
+	)
+}
+
+class LobbyPlayers extends React.Component<{ userIds: Array<number> }, {}> {
+	constructor(props: { userIds: Array<number> }) {
+		super(props);
+	}
+	render(): React.ReactNode {
+		return (
+			<div className="flex flex-row gap-6">
+				{this.props.userIds.map((userId) => {
+					return (
+						<div
+							key={userId}
+							className="flex flex-col items-center justify-center transition-all duration-500"
+						>
+							<div className="relative w-32 h-32">
+								<div className="absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-full blur-xl"></div>
+								<div
+									className="relative w-full h-full border-highlight-c border-solid border-[1px] rounded-full"
+									key={userId.toString()}
+								>
+									<p>
+										{userId
+											? `${userId.toString().slice(0, 2)}\n${userId
+												.toString()
+												.slice(2)}`
+											: "0"}
+									</p>
+								</div>
+							</div>
+						</div>
+					);
+				})}
+			</div>
+		);
+	}
+}
+
 
 let lobby_init: boolean = false;
 const Lobby: React.FC = () => {
@@ -129,84 +237,11 @@ const Lobby: React.FC = () => {
 		<div
 			className="flex flex-col text-6xl text-highlight-a justify-center 
       items-center text-center gap-10 py-10 scrollbar-thin scrollbar-thumb-d scrollbar-track-b overflow-auto"
+	  
 		>
-			<div className="flex flex-row">
-				<div className="relative">
-					<div className="relative flex border-highlight-c border-solid border-[1px] py-4 px-4 rounded-3xl">
-						<p className="font-light">Lobby Code: </p>
-						<input
-							type="text"
-							className="flex z-10 w-56 text-center border-none outline-none justify-center font-light bg-transparent"
-							value={joinedSessionCode}
-							onChange={(e) => setJoinedSessionCode(e.target.value)}
-						/>
-					</div>
-					<div className="absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-3xl blur-xl"></div>
-				</div>
-				{/* Copy Icon */}
-				<CopyToClipboard
-					text={window.location.href}
-					onCopy={() => setCopied(window.location.href)}
-				>
-					<div className="w-24 h-24">
-						<CopySvg
-							className={`w-full h-full mx-10 p-4 rounded-3xl 
-						border-highlight-c border-solid border-[1px]
-						hover:fill-highlight-a/50 transition duration-300 ease-out cursor-pointer
-						${copied === window.location.href ? "fill-a bg-highlight-d" : "bg-d fill-a"}`}
-						/>
-					</div>
-				</CopyToClipboard>
-			</div>
-			<div
-				className="flex relative"
-				onClick={() => {
-					if (ws !== null) {
-						ws.send(
-							JSON.stringify({
-								event: "GameStartEvent",
-								session: joinedSessionCode,
-							})
-						);
-					} else {
-						console.log("ws is null");
-					}
-				}}
-			>
-				<div
-					className="relative border-highlight-c border-solid border-[1px] py-4 px-4 
-          rounded-3xl z-10 font-thin hover:text-c hover:bg-highlight-c transition duration-300 ease-in cursor-pointer"
-				>
-					PLAY
-				</div>
-				<div className="absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-3xl blur-xl"></div>
-			</div>
-			<div className="flex flex-row gap-6">
-				{userIds.map((userId) => {
-					return (
-						<div
-							key={userId}
-							className="flex flex-col items-center justify-center transition-all duration-500"
-						>
-							<div className="relative w-32 h-32">
-								<div className="absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-full blur-xl"></div>
-								<div
-									className="relative w-full h-full border-highlight-c border-solid border-[1px] rounded-full"
-									key={userId.toString()}
-								>
-									<p>
-										{userId
-											? `${userId.toString().slice(0, 2)}\n${userId
-												.toString()
-												.slice(2)}`
-											: "0"}
-									</p>
-								</div>
-							</div>
-						</div>
-					);
-				})}
-			</div>
+			<SessionCodeDisplay sessionCode={joinedSessionCode} key={joinedSessionCode} />
+			<PlayButton websocket={ws} joinedSessionCode={joinedSessionCode} key={ws? 1 : 0}/>
+			<LobbyPlayers userIds={userIds} />
 			<div className="rounded-3xl bg-b mx-10 font-mono text-[10px] px-3 py-3 text-left">
 				{serverMessages.map((message) => {
 					return <p>{message}</p>;
