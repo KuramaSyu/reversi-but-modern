@@ -141,7 +141,8 @@ class DiscordLoginHandler(RequestHandler):
         self.write({
             "status": 200,
             "data": {
-                "code": code
+                "code": code,
+                "link": f"http://inuthebot.duckdns.org:4242/lobby/{code}"
             }
         })
 
