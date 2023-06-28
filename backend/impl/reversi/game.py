@@ -487,6 +487,7 @@ class Board:
                             continue
                         if chip.owner_id is None:
                             temp_affected_chips = set()
+                            first_own_chip_found = False
                             continue
                         if chip.owner_id == placed_chip.owner_id:
                             if first_own_chip_found:
