@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(leve
 from utils import Grid
 from impl.session_manager import GameSessionManager, LobbySessionManager
 from impl.event_handler import ReversiEventHandler, LobbyEventHandler
+import hikari
 
 
 
@@ -117,6 +118,25 @@ class CreateSessionHandler(RequestHandler):
         self.set_header('Access-Control-Allow-Headers', 'Content-Type')
 
     def get(self):
+        code = LobbySessionManager.create_session()
+        self.write({
+            "status": 200,
+            "data": {
+                "code": code
+            }
+        })
+
+class DiscordLoginHandler(RequestHandler):
+    def __init__(self, *args, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._set_headers()
+
+    def _set_headers(self):
+        self.set_header('Access-Control-Allow-Origin', '*')
+        self.set_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.set_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    async def get(self):
         code = LobbySessionManager.create_session()
         self.write({
             "status": 200,
