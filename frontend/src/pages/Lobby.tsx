@@ -13,7 +13,7 @@ interface SessionCodeDisplayProps {
 }
 
 
-const PlayButton: React.FC<{websocket: WebSocket | null; joinedSessionCode: string | null;}> = ({websocket, joinedSessionCode}) => {
+const PlayButton: React.FC<{ websocket: WebSocket | null; joinedSessionCode: string | null; }> = ({ websocket, joinedSessionCode }) => {
 	const [ws, setWs] = useState<WebSocket | null>(websocket);
 	const [_joinedSessionCode, _setJoinedSessionCode] = useState<string | null>(joinedSessionCode);
 	return (
@@ -34,8 +34,8 @@ const PlayButton: React.FC<{websocket: WebSocket | null; joinedSessionCode: stri
 		>
 			<div
 				className="relative border-highlight-c border-solid border-[1px] py-4 px-4 
-  rounded-3xl z-10 font-thin hover:text-c hover:bg-highlight-c transition duration-300 ease-in cursor-pointer"
-			>
+  				rounded-3xl z-10 font-thin text-8xl hover:text-c hover:bg-highlight-c 
+				transition duration-300 ease-in cursor-pointer">
 				PLAY
 			</div>
 			<div className="absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-3xl blur-xl"></div>
@@ -49,11 +49,11 @@ const SessionCodeDisplay: React.FC<SessionCodeDisplayProps> = ({ sessionCode }) 
 	return (
 		<div className="flex flex-row">
 			<div className="relative">
-				<div className="relative flex border-highlight-c border-solid border-[1px] py-4 px-4 rounded-3xl">
+				<div className="relative flex border-highlight-c border-solid border-[1px] py-6 px-6 rounded-3xl items-center text-7xl">
 					<p className="font-light">Lobby Code: </p>
 					<input
 						type="text"
-						className="flex z-10 w-56 text-center border-none outline-none justify-center font-light bg-transparent"
+						className="flex z-10 w-56 text-7xl text-center border-none outline-none justify-center font-light bg-transparent"
 						value={joinedSessionCode}
 						onChange={(e) => setJoinedSessionCode(e.target.value)}
 					/>
@@ -65,7 +65,7 @@ const SessionCodeDisplay: React.FC<SessionCodeDisplayProps> = ({ sessionCode }) 
 				text={window.location.href}
 				onCopy={() => setCopied(window.location.href)}
 			>
-				<div className="w-24 h-24">
+				<div className="w-32 h-32">
 					<CopySvg
 						className={`w-full h-full mx-10 p-4 rounded-3xl 
 					border-highlight-c border-solid border-[1px]
@@ -89,15 +89,12 @@ class LobbyPlayers extends React.Component<{ userIds: Array<number> }, {}> {
 					return (
 						<div
 							key={userId}
-							className="flex flex-col items-center justify-center transition-all duration-500"
-						>
-							<div className="relative w-32 h-32">
+							className="flex flex-col items-center justify-center transition-all duration-500">
+							<div className="relative w-40 h-40 text-7xl items-center">
 								<div className="absolute w-full h-full top-0 left-0 border-highlight-c border-solid border-[12px] rounded-full blur-xl"></div>
-								<div
-									className="relative w-full h-full border-highlight-c border-solid border-[1px] rounded-full"
-									key={userId.toString()}
-								>
-									<p>
+								<div className="relative w-full h-full border-highlight-c border-solid border-[1px] rounded-full items-center"
+									key={userId.toString()}>
+									<p className="w-full h-full">
 										{userId
 											? `${userId.toString().slice(0, 2)}\n${userId
 												.toString()
@@ -235,18 +232,17 @@ const Lobby: React.FC = () => {
 
 	return (
 		<div
-			className="flex flex-col text-6xl text-highlight-a justify-center 
-      items-center text-center gap-10 py-10 scrollbar-thin scrollbar-thumb-d scrollbar-track-b overflow-auto"
-	  
+			className="flex flex-col text-6xl text-highlight-a justify-center w-full h-[70%]
+      		items-center text-center gap-24 py-10 scrollbar-thin scrollbar-thumb-d scrollbar-track-b overflow-auto"
 		>
 			<SessionCodeDisplay sessionCode={joinedSessionCode} key={joinedSessionCode} />
-			<PlayButton websocket={ws} joinedSessionCode={joinedSessionCode} key={ws? 1 : 0}/>
+			<PlayButton websocket={ws} joinedSessionCode={joinedSessionCode} key={ws ? 1 : 0} />
 			<LobbyPlayers userIds={userIds} />
-			<div className="rounded-3xl bg-b mx-10 font-mono text-[10px] px-3 py-3 text-left">
+			{/* <div className="rounded-3xl bg-b mx-10 font-mono text-sm px-3 py-3 text-left">
 				{serverMessages.map((message) => {
 					return <p>{message}</p>;
 				})}
-			</div>
+			</div> */}
 		</div>
 	);
 };
