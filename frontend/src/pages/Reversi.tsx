@@ -146,8 +146,8 @@ class Board extends React.Component<BoardProps, BoardState> {
 			current_player_id: 0,
 			valid_moves: [],
 		};
-		this.active_attrs = "bg-b text-highlight-b font-semibold text-xl";
-		this.unactive_attrs = "text-highlight-b font-extralight text-xl";
+		this.active_attrs = "bg-b text-highlight-b font-semibold text-3xl";
+		this.unactive_attrs = "text-highlight-b font-extralight text-3xl";
 		this.current_player_id = 0;
 		this.player_1_id = 0;
 		this.player_2_id = 0;
@@ -193,7 +193,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 		this.turn = event.data.turn;
 		this.current_player_id = event.data.user_id;
 		this.setState({
-			info: `Turn ${this.turn}${event.data.reason ? "\n" + event.data.reason : ""}`,
+			info: `Turn ${this.turn}${this.current_player_id == this.state.player_id ? " - it's your Turn" : ""}${event.data.reason ? "\n----\n" + event.data.reason : ""}`,
 			current_player_id: event.data.user_id,
 		});
 		if (this.current_player_id == this.state.player_id) {
@@ -338,7 +338,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 					squares.push(
 						<div
 							key={`${row}:${col}`}
-							className={`flex justify-center items-center transition-all duration-700 ease-out rounded-full ${active_attrs}`}
+							className={`flex justify-center items-center transition-all duration-500 ease-out rounded-full ${active_attrs}`}
 						>
 							{letter}
 						</div>
@@ -395,7 +395,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 						}}
 					>
 						<div className={`flex w-full h-full justify-center items-center ${hover_color} hover:rounded-2xl 
-                bg-transparent transition-all duration-[1200ms] ease-out hover:duration-200`}>
+                		bg-transparent transition-all duration-[1200ms] ease-out hover:duration-200`}>
 							{/* render chip on click into the square */}
 							<div className='flex w-full h-full items-center justify-center'>{chip}</div>
 						</div>
@@ -404,7 +404,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 			}
 		}
 		// calculate player info circle size
-		const shrink_percent = 0.65;
+		const shrink_percent = 0.75;
 		const px = Math.floor(screen_height * 0.8);
 		const px_rest_width = (Math.min(window.innerHeight, window.innerWidth - px)) / 1.42 * 1 * shrink_percent;
 
@@ -413,10 +413,10 @@ class Board extends React.Component<BoardProps, BoardState> {
 				<div className={" grid grid-cols-9 grid-rows-9 mb-5 lg:mr-5"} style={{ height: px, width: px }}>
 					{squares}
 				</div>
-				<div className='flex flex-col basis-2/5 flex-initial justify-between items-center gap-5 h-full'>
+				<div className='flex flex-col basis-2/5 flex-initial justify-between items-center gap-20 h-full'>
 					{/* info bar */}
-					<div className='flex flex-row basis-1/5 justify-between items-center w-full h-full bg-b rounded-2xl'>
-						<div className='flex basis-3/5 flex-shrink px-5 text-highlight-a font-mono justify-center items-center text-center w-full'>
+					<div className='flex flex-row basis-1/5 justify-between items-center w-full h-full bg-b rounded-2xl text-xl'>
+						<div className='flex basis-3/5 flex-shrink px-5 text-highlight-a font-mono ustify-center items-center text-center w-full'>
 							<TypeAnimation
 								key={this.state.info}
 								sequence={[
@@ -424,8 +424,9 @@ class Board extends React.Component<BoardProps, BoardState> {
 								]}
 								wrapper="div"
 								className="w-full h-full"
-								speed={50}
+								speed={60}
 								repeat={0}
+								cursor={false}
 							/>
 						</div>
 						<div className='flex basis-2/5 flex-col p-3 bg-c text-highlight-a font-mono items-left rounded-xl h-full justify-center'>
@@ -440,8 +441,8 @@ class Board extends React.Component<BoardProps, BoardState> {
 						<div className="flex flex-row justify-around items-center relative mr-5 lg:my-0 lg:mx-5 overflow-hidden" style={{ height: px_rest_width, width: px_rest_width }}>
 							<div
 								className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
-                        border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
-                        ${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
+								border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
+								${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
 							</div>
 							<div className={`flex rounded-full ${this.chip_colors[this.player_1_id]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
 								{this.player_1_id === this.state.player_id ? 'You' : ""}
