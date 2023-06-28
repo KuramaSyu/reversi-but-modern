@@ -495,7 +495,7 @@ class Board:
                                 first_own_chip_found = True
                             continue
                         if first_own_chip_found:
-                            affected_chips.add(chip)
+                            temp_affected_chips.add(chip)
                         
         if print_:
             print(f"affected chips: {affected_chips}")
