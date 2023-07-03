@@ -108,9 +108,12 @@ class LobbyWebSocket(WebSocketHandler):
 
 
 class CreateSessionHandler(RequestHandler):
+    BASE_URL = "http://inuthebot.duckdns.org:4242/"
+
     def __init__(self, *args, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._set_headers()
+        
 
     def _set_headers(self):
         self.set_header('Access-Control-Allow-Origin', '*')
@@ -122,7 +125,8 @@ class CreateSessionHandler(RequestHandler):
         self.write({
             "status": 200,
             "data": {
-                "code": code
+                "code": code,
+                "link": f"{self.BASE_URL}lobby/{code}"
             }
         })
 
