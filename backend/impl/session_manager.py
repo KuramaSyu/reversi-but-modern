@@ -76,8 +76,6 @@ class SessionManager:
     @classmethod
     def validate_session(cls, session: str) -> bool:
         """whether a session exists or not"""
-        print(cls.sessions.keys())
-        print(session in cls.sessions.keys())
         return session in cls.sessions.keys()
 
 
@@ -125,7 +123,8 @@ class GameSessionManager(SessionManager):
 
 
 class LobbySessionManager(SessionManager):
-
+    websockets: Dict[int, WebSocketHandler] = {}
+    sessions: Dict[str, List[WebSocketHandler]] = {}
 
     @classmethod
     def transfer_to_game(cls, session: str) -> None:
