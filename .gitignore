@@ -200,3 +200,4 @@ yarn.lock
 !/frontend/tailwind.config.js
 package.json
 backend/bin
+/bin
