@@ -16,6 +16,10 @@ module.exports = {
         "highlight-b": 'rgb(var(--highlight-b) / <alpha-value>)',
         "highlight-c": 'rgb(var(--highlight-c) / <alpha-value>)',
         "highlight-d": 'rgb(var(--highlight-d) / <alpha-value>)',
+        "chip-a1": 'rgb(var(--chip-a1) / <alpha-value>)',
+        "chip-a2": 'rgb(var(--chip-a2) / <alpha-value>)',
+        "chip-b1": 'rgb(var(--chip-b1) / <alpha-value>)',
+        "chip-b2": 'rgb(var(--chip-b2) / <alpha-value>)',
           ...colors
       },
       extend: {
