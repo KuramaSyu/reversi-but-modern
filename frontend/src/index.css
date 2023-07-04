@@ -13,33 +13,14 @@ body {
       --highlight-b: 136 192 208;
       --highlight-c: 129 161 193;
       --highlight-d: 94 129 172;
+      --chip-a1: 65 105 225;
+      --chip-a2: 224 180 65;
+      --chip-b1: 102 51 153;
+      --chip-b2: 152 153 50;
   
   }
 }
-@layer components{
-  .theme-pastel {
-    --color-a: 212 191 255;   /* Lavender */
-    --color-b: 255 179 186;   /* Pastel Red */
-    --color-c: 255 218 193;   /* Peach */
-    --color-d: 192 226 218;   /* Mint */
-    --highlight-a: 98 54 166; /* Dark Purple */
-    --highlight-b: 198 57 57; /* Dark Red */
-    --highlight-c: 232 106 76; /* Dark Orange */
-    --highlight-d: 0 140 114; /* Dark Green */
-  }
-}
-@layer components{
-  .theme-neon {
-    --color-a: 255 0 255;    /* Dark Lilac */
-    --color-b: 255 0 0;      /* Coral */
-    --color-c: 0 0 255;      /* Salmon */
-    --color-d: 0 255 0;      /* Teal */
-    --highlight-a: 98 54 166; /* Dark Purple */
-    --highlight-b: 198 57 57; /* Dark Red */
-    --highlight-c: 232 106 76; /* Dark Orange */
-    --highlight-d: 0 140 114; /* Dark Green */
-  }
-}
+
 @layer components {
   .theme-woodland {
     --color-a: 216 227 193;    /* Light Green */
@@ -50,6 +31,10 @@ body {
     --highlight-b: 87 101 74;  /* Deep Green */
     --highlight-c: 76 88 65;  /* Dark Green */
     --highlight-d: 66 77 56;  /* Very Deep Green */
+    --chip-a1: 65 105 225;
+    --chip-a2: 224 180 65;
+    --chip-b1: 102 51 153;
+    --chip-b2: 152 153 50;
   }
 }
 
