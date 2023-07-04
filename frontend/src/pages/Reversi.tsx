@@ -125,12 +125,13 @@ class Board extends React.Component<BoardProps, BoardState> {
 		1: <Chip color="bg-highlight-a/70 border-4 border-black/40" bg_color='bg-a' />,
 		2: <Chip color="bg-highlight-d/70 border-4 border-black/40" bg_color='bg-a' />,
 	};
-	chip_colors: Record<number, string> = {};
+	chip_colors: Record<number, {100: string; 85: string; 70: string;}> = {0:{100:"", 85:"", 70:""}};
 	current_player_id: number = 0;
 	player_1_id: number = 0;
 	player_2_id: number = 0;
 	starter_id: number = 0;
 	turn: number = 1;
+	last_chip_placed: {row: Number; col: Number, player_id: Number};
 
 	constructor(props: BoardProps) {
 		super(props);
@@ -152,6 +153,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 		this.player_1_id = 0;
 		this.player_2_id = 0;
 		this.starter_id = 0;
+		this.last_chip_placed = { row: -1, col: -1, player_id: 0};
 	}
 
 	on_rule_error(event: RuleErrorEvent) {
@@ -165,6 +167,8 @@ class Board extends React.Component<BoardProps, BoardState> {
 		}
 		const row = event.data.row;
 		const col = event.data.column;
+		// filter old last placed chip
+		this.last_chip_placed = { row: row, col: col, player_id: event.user_id};
 		this.board.push({ row: row, col: col, chip: this.chips[this.current_player_id] });
 		const swappedChips: Array<{ row: number, column: number, owner_id: number }> = event.data.swapped_chips;
 		// remove every chip from board that is in swapped chips
@@ -223,13 +227,21 @@ class Board extends React.Component<BoardProps, BoardState> {
 		// set this.state.player_id to own id
 
 		this.chip_colors = {
-			[this.player_1_id]: "bg-highlight-a/70 border-4 border-black/40",
-			[this.player_2_id]: "bg-highlight-d/70 border-4 border-black/40",
+			[this.player_1_id]: {
+				100: "bg-chip-a1/100 border-4 border-black/40",
+				85: "bg-chip-a1/85 border-4 border-black/40",
+				70: "bg-chip-a1/70 border-4 border-black/40",
+			},
+			[this.player_2_id]: {
+				100: "bg-chip-a2/100 border-4 border-black/40",
+				85: "bg-chip-a2/85 border-4 border-black/40",
+				70: "bg-chip-a2/70 border-4 border-black/40",
+			},
 		};
 
 		this.chips = {
-			[this.player_1_id]: <Chip color="bg-highlight-a/70 border-4 border-black/40" bg_color='bg-a' />,
-			[this.player_2_id]: <Chip color="bg-highlight-d/70 border-4 border-black/40" bg_color='bg-a' />,
+			[this.player_1_id]: <Chip color={`${this.chip_colors[this.player_1_id][70]} border-4 border-black/40`} bg_color='bg-a' />,
+			[this.player_2_id]: <Chip color={`${this.chip_colors[this.player_2_id][70]} border-4 border-black/40`} bg_color='bg-a' />,
 		};
 		board.forEach(
 			(chip) => {
@@ -444,10 +456,10 @@ class Board extends React.Component<BoardProps, BoardState> {
 								border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
 								${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
 							</div>
-							<div className={`flex rounded-full ${this.chip_colors[this.player_1_id]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+							<div className={`flex rounded-full ${this.chip_colors[this.player_1_id][70]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
 								{this.player_1_id === this.state.player_id ? 'You' : ""}
 							</div>
-							<div className={`flex rounded-full ${this.chip_colors[this.player_2_id]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+							<div className={`flex rounded-full ${this.chip_colors[this.player_2_id][70]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
 								{this.player_2_id === this.state.player_id ? 'You' : ""}
 							</div>
 						</div>
