@@ -145,6 +145,10 @@ class Board extends React.Component<BoardProps, BoardState> {
 	turn: number = 1;
 	last_chip_placed: {row: number; column: number, ower_id: number};
 	last_chips_swapped: Array<{row: number; column: number, owner_id: number}> = [];
+	COLOR_VARIANTS: string[][] = [];
+	COLOR: string[] = []
+	letters: Array<string> = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
 	
 	constructor(props: BoardProps) {
 		super(props);
@@ -168,6 +172,11 @@ class Board extends React.Component<BoardProps, BoardState> {
 		this.starter_id = 0;
 		this.last_chip_placed = { row: -1, column: -1, ower_id: 0};
 		this.last_chips_swapped = [];
+		// this.letters.forEach(element => {
+		// 	this.COLOR_VARIANTS.push([`bg-chip-${element}1`, `bg-chip-${element}2`])
+		// });
+		this.COLOR_VARIANTS = [["bg-chip-a1", "bg-chip-a2"]]
+		this.COLOR = this.pickColor()
 	}
 
 	on_rule_error(event: RuleErrorEvent) {
@@ -249,16 +258,18 @@ class Board extends React.Component<BoardProps, BoardState> {
 		this.starter_id = event.data.current_player_id;
 
 		// set this.state.player_id to own id
+		// /100 /60 is not working because tailwind needs full string
+		// fix?
 		this.chip_colors = {
 			[this.player_1_id]: {
-				3: "bg-chip-b1/100 border-4 border-black/40",
-				2: "bg-chip-b1/60 border-4 border-black/40",
-				1: "bg-chip-b1/60 border-4 border-black/40",
+				3: `${this.COLOR[0]}/100 border-4 border-black/40`,
+				2: `${this.COLOR[0]}/60 border-4 border-black/40`,
+				1: `${this.COLOR[0]}/60 border-4 border-black/40`,
 			},
 			[this.player_2_id]: {
-				3: "bg-chip-b2/100 border-4 border-black/40",
-				2: "bg-chip-b2/60 border-4 border-black/40",
-				1: "bg-chip-b2/60 border-4 border-black/40",
+				3: `${this.COLOR[1]}/100 border-4 border-black/40`,
+				2: `${this.COLOR[1]}/60 border-4 border-black/40`,
+				1: `${this.COLOR[1]}/60 border-4 border-black/40`,
 			},
 		};
 		this.bg_colors = {
@@ -305,6 +316,14 @@ class Board extends React.Component<BoardProps, BoardState> {
 		this.setState(
 			{ player_id: id }
 		)
+	}
+
+	pickColor() {
+		// picks a color based on the minute
+		var minute = new Date().toLocaleTimeString([], {
+			minute: "2-digit",
+		});
+		return this.COLOR_VARIANTS[(Number(minute) % this.COLOR_VARIANTS.length)]
 	}
 
 	cyclePlayer() {
