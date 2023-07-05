@@ -96,9 +96,8 @@ class LobbyPlayers extends React.Component<{ userIds: Array<number> }, {}> {
 									key={userId.toString()}>
 									<p className="w-full h-full">
 										{userId
-											? `${userId.toString().slice(0, 2)}\n${userId
-												.toString()
-												.slice(2)}`
+											? `${userId.toString().slice(0, 2)}\n
+											${userId.toString().slice(2)}`
 											: "0"}
 									</p>
 								</div>
@@ -232,7 +231,7 @@ const Lobby: React.FC = () => {
 
 	return (
 		<div
-			className="flex flex-col text-6xl text-highlight-a justify-center w-full h-[70%]
+			className="flex flex-col text-6xl text-highlight-a justify-center w-full h-[100%]
       		items-center text-center gap-24 py-10 scrollbar-thin scrollbar-thumb-d scrollbar-track-b overflow-auto"
 			key={joinedSessionCode}
 		>
