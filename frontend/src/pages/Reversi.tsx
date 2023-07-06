@@ -175,7 +175,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 		// this.letters.forEach(element => {
 		// 	this.COLOR_VARIANTS.push([`bg-chip-${element}1`, `bg-chip-${element}2`])
 		// });
-		this.COLOR_VARIANTS = [["bg-chip-a1", "bg-chip-a2"]]
+		this.COLOR_VARIANTS = [["bg-chip-a1/60", "bg-chip-a2/60"]]
 		this.COLOR = this.pickColor()
 	}
 
@@ -260,16 +260,17 @@ class Board extends React.Component<BoardProps, BoardState> {
 		// set this.state.player_id to own id
 		// /100 /60 is not working because tailwind needs full string
 		// fix?
+		const test = `${this.COLOR[0]}/60`.toString();
 		this.chip_colors = {
 			[this.player_1_id]: {
-				3: `${this.COLOR[0]}/100 border-4 border-black/40`,
-				2: `${this.COLOR[0]}/60 border-4 border-black/40`,
-				1: `${this.COLOR[0]}/60 border-4 border-black/40`,
+				3: `${this.COLOR[0]} border-4 border-black/40`,
+				2: `${this.COLOR[0]} border-4 border-black/40`,
+				1: `${this.COLOR[0]} border-4 border-black/40`,
 			},
 			[this.player_2_id]: {
-				3: `${this.COLOR[1]}/100 border-4 border-black/40`,
-				2: `${this.COLOR[1]}/60 border-4 border-black/40`,
-				1: `${this.COLOR[1]}/60 border-4 border-black/40`,
+				3: `${this.COLOR[1]} border-4 border-black/40`,
+				2: `${this.COLOR[1]} border-4 border-black/40`,
+				1: `${this.COLOR[1]} border-4 border-black/40`,
 			},
 		};
 		this.bg_colors = {
@@ -343,6 +344,40 @@ class Board extends React.Component<BoardProps, BoardState> {
 	handleResize = () => {
 		// Update the screen height state when the window is resized
 		this.setState({ screen_height: Math.min(window.innerHeight, window.innerWidth) });
+	}
+
+	// playerInfo(px_rest_width: number) {
+	// 	return (
+	// 	<div className="flex flex-row justify-around items-center relative mr-5 lg:my-0 lg:mx-5 overflow-hidden" style={{ height: px_rest_width, width: px_rest_width }}>
+	// 		<div
+	// 			className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
+	// 			border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
+	// 			${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
+	// 		</div>
+	// 		<div className={`flex rounded-full ${this.chip_colors[this.player_1_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+	// 			{this.player_1_id === this.state.player_id ? 'You' : ""}
+	// 		</div>
+	// 		<div className={`flex rounded-full ${this.chip_colors[this.player_2_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+	// 			{this.player_2_id === this.state.player_id ? 'You' : ""}
+	// 		</div>
+	// 	</div>
+	// 	)
+	// }
+	playerInfo(px_rest_width: number) {
+		return (
+		<div className="flex flex-row lg:flex-col justify-around items-center relative mr-5 lg:my-0 lg:mx-5 w-full h-full">
+			<div className={`flex flex-grow rounded-lg ${this.chip_colors[this.player_1_id][1]} 
+			justify-center items-center text-4xl text-a font-extralight font-mono h-12 lg:w-full h-full
+			${this.current_player_id === this.player_1_id ? 'basis-2/3' : 'basis-1/3'}}`}>
+				{this.player_1_id === this.state.player_id ? 'You' : ""}
+			</div>
+			<div className={`flex flex-grow rounded-lg ${this.chip_colors[this.player_2_id][1]} 
+			justify-center items-center text-4xl text-a font-extralight font-mono h-12 h-full lg:w-full
+			${this.current_player_id === this.player_2_id ? 'basis-2/3' : 'basis-1/3'}`} >
+				{this.player_2_id === this.state.player_id ? 'You' : ""}
+			</div>
+		</div>
+		)
 	}
 	render() {
 		const squares = [];
@@ -486,7 +521,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 				<div className={" grid grid-cols-9 grid-rows-9 mb-5 lg:mr-5"} style={{ height: px, width: px }}>
 					{squares}
 				</div>
-				<div className='flex flex-col basis-2/5 flex-initial justify-between items-center gap-20 h-full'>
+				<div className='flex flex-col lg:basis-2/5 flex-initial justify-between items-center gap-20 h-full w-full'>
 					{/* info bar */}
 					<div className='flex flex-row basis-1/5 justify-between items-center w-full h-full bg-b rounded-2xl text-xl'>
 						<div className='flex basis-3/5 flex-shrink px-5 text-highlight-a font-mono ustify-center items-center text-center w-full'>
@@ -502,7 +537,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 								cursor={false}
 							/>
 						</div>
-						<div className='flex basis-2/5 flex-col p-3 bg-c text-highlight-a font-mono items-left rounded-xl h-full justify-center'>
+						<div className='flex basis-2/5 flex-col p-3 bg-c text-highlight-a font-mono items-left rounded-xl h-full w-full justify-center'>
 							<p className='flex'>Session: {this.props.session}</p>
 							<p className='flex'>Your ID: {this.state.player_id}</p>
 							<p className='flex'>Opponent ID: {this.state.player_id === this.player_1_id ? this.player_2_id : this.player_1_id}</p>
@@ -510,21 +545,9 @@ class Board extends React.Component<BoardProps, BoardState> {
 						</div>
 					</div>
 					{/* player indicator circle */}
-					<div className='flex basis-3/4 flex-grow'>
-						<div className="flex flex-row justify-around items-center relative mr-5 lg:my-0 lg:mx-5 overflow-hidden" style={{ height: px_rest_width, width: px_rest_width }}>
-							<div
-								className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
-								border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
-								${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
-							</div>
-							<div className={`flex rounded-full ${this.chip_colors[this.player_1_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
-								{this.player_1_id === this.state.player_id ? 'You' : ""}
-							</div>
-							<div className={`flex rounded-full ${this.chip_colors[this.player_2_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
-								{this.player_2_id === this.state.player_id ? 'You' : ""}
-							</div>
-						</div>
-					</div>
+					
+					{this.playerInfo(px_rest_width)}
+					
 
 				</div>
 
