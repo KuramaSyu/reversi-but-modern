@@ -6,10 +6,13 @@ services:
     restart: "unless-stopped"
     ports:
       - "8888:8888"
-    
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
   reversi-fontend:
     container_name: frontend
     build: ./frontend
     restart: "unless-stopped"
     ports:
       - "4242:3000"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
