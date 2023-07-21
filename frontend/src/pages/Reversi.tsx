@@ -363,18 +363,55 @@ class Board extends React.Component<BoardProps, BoardState> {
 	// 	</div>
 	// 	)
 	// }
+	infoBar() {
+		return (
+		<div>
+		<div className='flex flex-row basis-1/5 justify-between items-center w-full h-full bg-b rounded-2xl text-xl'>
+			<div className='flex basis-3/5 flex-shrink px-5 text-highlight-a font-mono ustify-center items-center text-center w-full'>
+				<TypeAnimation
+					key={this.state.info}
+					sequence={[
+						this.state.info,
+					]}
+					wrapper="div"
+					className="w-full h-full"
+					speed={60}
+					repeat={0}
+					cursor={false}
+				/>
+			</div>
+			<div className='flex basis-2/5 flex-col p-3 bg-c text-highlight-a font-mono items-left rounded-xl h-full w-full justify-center'>
+				<p className='flex'>Session: {this.props.session}</p>
+				<p className='flex'>Your ID: {this.state.player_id}</p>
+				<p className='flex'>Opponent ID: {this.state.player_id === this.player_1_id ? this.player_2_id : this.player_1_id}</p>
+				<p className='flex'>Possible moves: {this.state.valid_moves.length}</p>
+			</div>
+		</div>
+		<div className='flex basis-1/6 bg-d font-sans font-thin border-highlight-c border-solid border-[1px] py-4 px-4 
+  				rounded-3xl text-8xl hover:text-c hover:bg-highlight-c 
+				transition duration-300 ease-in cursor-pointer'>
+				SURRENDER
+			</div>
+		</div>
+		
+		)
+	}
 	playerInfo(px_rest_width: number) {
 		return (
-		<div className="flex flex-row lg:flex-col justify-around items-center relative mr-5 lg:my-0 lg:mx-5 w-full h-full">
-			<div className={`flex flex-grow rounded-lg ${this.chip_colors[this.player_1_id][1]} 
-			justify-center items-center text-4xl text-a font-extralight font-mono h-12 lg:w-full h-full
-			${this.current_player_id === this.player_1_id ? 'basis-2/3' : 'basis-1/3'}}`}>
-				{this.player_1_id === this.state.player_id ? 'You' : ""}
-			</div>
-			<div className={`flex flex-grow rounded-lg ${this.chip_colors[this.player_2_id][1]} 
-			justify-center items-center text-4xl text-a font-extralight font-mono h-12 h-full lg:w-full
-			${this.current_player_id === this.player_2_id ? 'basis-2/3' : 'basis-1/3'}`} >
-				{this.player_2_id === this.state.player_id ? 'You' : ""}
+			<div className='flex basis-3/4 flex-grow'>
+			<div className="flex flex-row justify-around items-center relative mr-5 lg:my-0 lg:mx-5 overflow-hidden" 
+			style={{ height: px_rest_width, width: px_rest_width }}>
+				<div
+					className={`absolute -z-1 w-[98%] h-[98%] bg-transparent border-highlight-c rounded-full border-4
+					border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
+					${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
+				</div>
+				<div className={`flex rounded-full ${this.chip_colors[this.player_1_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+					{this.player_1_id === this.state.player_id ? 'You' : ""}
+				</div>
+				<div className={`flex rounded-full ${this.chip_colors[this.player_2_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+					{this.player_2_id === this.state.player_id ? 'You' : ""}
+				</div>
 			</div>
 		</div>
 		)
@@ -523,32 +560,9 @@ class Board extends React.Component<BoardProps, BoardState> {
 				</div>
 				<div className='flex flex-col lg:basis-2/5 flex-initial justify-between items-center gap-20 h-full w-full'>
 					{/* info bar */}
-					<div className='flex flex-row basis-1/5 justify-between items-center w-full h-full bg-b rounded-2xl text-xl'>
-						<div className='flex basis-3/5 flex-shrink px-5 text-highlight-a font-mono ustify-center items-center text-center w-full'>
-							<TypeAnimation
-								key={this.state.info}
-								sequence={[
-									this.state.info,
-								]}
-								wrapper="div"
-								className="w-full h-full"
-								speed={60}
-								repeat={0}
-								cursor={false}
-							/>
-						</div>
-						<div className='flex basis-2/5 flex-col p-3 bg-c text-highlight-a font-mono items-left rounded-xl h-full w-full justify-center'>
-							<p className='flex'>Session: {this.props.session}</p>
-							<p className='flex'>Your ID: {this.state.player_id}</p>
-							<p className='flex'>Opponent ID: {this.state.player_id === this.player_1_id ? this.player_2_id : this.player_1_id}</p>
-							<p className='flex'>Possible moves: {this.state.valid_moves.length}</p>
-						</div>
-					</div>
+					{this.infoBar()}
 					{/* player indicator circle */}
-					
 					{this.playerInfo(px_rest_width)}
-					
-
 				</div>
 
 			</div>
