@@ -135,10 +135,14 @@ const Lobby: React.FC = () => {
 	);
 
 	useEffect(() => {
+		console.log("useEffect");
+		console.log("lobby_init: " + lobby_init);
 		if (lobby_init === false) {
+			console.log("lobby_init is false");
 			lobby_init = true;
 		} else {
 			return () => {
+				lobby_init = false;
 				ws?.close();
 			};
 		}
@@ -189,13 +193,24 @@ const Lobby: React.FC = () => {
 			]);
 			const data = JSON.parse(event.data);
 			// handle session join event
-			if (data.event === "SessionJoinEvent" && data.status === 200) {
-				console.log("SessionJoinEvent");
-				const { session } = data;
-				const user_id = data.data.user_id;
-				setUserIds((prevUserIds) => data.data.all_users);
-				setJoinedSessionCode(session);
+			if (data.event === "SessionJoinEvent") {
+				if (data.status === 200 ) {
+					console.log("SessionJoinEvent");
+					const { session } = data;
+					const user_id = data.data.user_id;
+					setUserIds((prevUserIds) => data.data.all_users);
+					setJoinedSessionCode(session);
+				} else if (data.status == 404) {
+					// create new session code
+					socket.send(
+						JSON.stringify({
+							event: "SessionCreateEvent",
+						})
+					);
+				}
+
 			}
+
 			// handle session create event
 			if (data.event === "SessionCreateEvent" && data.status === 200) {
 				// setSessionCode(data.session);
@@ -225,6 +240,8 @@ const Lobby: React.FC = () => {
 			// Cleanup WebSocket connection on component unmount
 			return () => {
 				socket.close();
+				lobby_init = false;
+				setWs(null);
 			};
 		};
 	}, []);
