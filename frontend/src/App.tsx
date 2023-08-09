@@ -20,7 +20,7 @@ const TitleBar: React.FC<TitleBarProps> = ({ title, theme, themes, onCycleTheme 
 		<div className={`relative title-bar bg-b text-highlight-c flex justify-between ${default_animation} w-full`}>
 			<div className={`ml-3 lg:mx-24 my-2 z-10 text-5xl font-thin hover:text-highlight-a 
       						cursor-pointer transition duration-300`}
-				onClick={() => navigate("/lobby/0")}>{title}</div>
+				onClick={() => navigate("/")}>{title}</div>
 			<div className='h-hull items-center'>
 				<button
 					className={`my-1 py-4 px-4 rounded-xl bg-d hover:bg-c focus:border-blue-500`}
