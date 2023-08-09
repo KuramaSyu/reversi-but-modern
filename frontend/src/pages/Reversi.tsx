@@ -365,9 +365,10 @@ class Board extends React.Component<BoardProps, BoardState> {
 	// }
 	infoBar() {
 		return (
-		<div>
-		<div className='flex flex-row basis-1/5 justify-between items-center w-full h-full bg-b rounded-2xl text-xl'>
-			<div className='flex basis-3/5 flex-shrink px-5 text-highlight-a font-mono ustify-center items-center text-center w-full'>
+		<div className='flex flex-col w-full items-center justify-between'>
+		<div className='flex flex-row justify-between items-center w-full h-full bg-b rounded-2xl text-xl'>
+			<div className='flex basis-3/5 flex-shrink px-5 text-highlight-a font-mono ustify-center 
+			items-center text-center w-full'>
 				<TypeAnimation
 					key={this.state.info}
 					sequence={[
@@ -387,11 +388,27 @@ class Board extends React.Component<BoardProps, BoardState> {
 				<p className='flex'>Possible moves: {this.state.valid_moves.length}</p>
 			</div>
 		</div>
-		<div className='flex basis-1/6 bg-d font-sans font-thin border-highlight-c border-solid border-[1px] py-4 px-4 
-  				rounded-3xl text-8xl hover:text-c hover:bg-highlight-c 
-				transition duration-300 ease-in cursor-pointer'>
+		<div className='flex flex-row-reverse items-center w-full'>
+			<div className='flex basis-2/5 flex-row items-center justify-center'>
+			<div className='flex shrink bg-d font-sans font-extralight border-highlight-c border-solid border-[1px] py-3 px-3 
+				rounded-3xl text-3xl hover:text-c hover:bg-highlight-c justify-center
+				transition duration-300 ease-in cursor-pointer w-fit my-2'
+				onClick={
+					() => {
+						this.props.socket?.send(JSON.stringify({
+							event: "SurrenderEvent",
+							session: this.props.session,
+							data: {
+								player_id: this.state.player_id
+							}
+						}))
+					}
+				}>
 				SURRENDER
 			</div>
+			</div>
+		</div>	
+
 		</div>
 		
 		)
@@ -558,7 +575,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 				<div className={" grid grid-cols-9 grid-rows-9 mb-5 lg:mr-5"} style={{ height: px, width: px }}>
 					{squares}
 				</div>
-				<div className='flex flex-col lg:basis-2/5 flex-initial justify-between items-center gap-20 h-full w-full'>
+				<div className='flex flex-col lg:basis-2/5 flex-initial justify-between items-center h-full w-full'>
 					{/* info bar */}
 					{this.infoBar()}
 					{/* player indicator circle */}
