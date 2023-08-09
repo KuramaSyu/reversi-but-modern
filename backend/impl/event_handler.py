@@ -8,7 +8,7 @@ import logging
 
 from impl.session_manager import GameSessionManager, LobbySessionManager, SessionManager
 
-from impl.reversi.game import Game
+from impl.reversi.game import Game, GameOverEvent
 from impl.reversi.game_manager import ReversiManager
 
 
@@ -19,6 +19,9 @@ class ResponseType(Enum):
     PLAYER = 1
 
 class EventManager:
+    """
+    Manages the Reversi Events and sends notifications to the listeners
+    """
     def __init__(self, event_handler: "ReversiEventHandler", session_manager: SessionManager):
         self.log = logging.getLogger(event_handler.__class__.__name__)
         self.session_manager = session_manager
@@ -67,6 +70,7 @@ class ReversiEventHandler:
         self.event_manager.add_listener("ErrorEvent", self.error_event)
         self.event_manager.add_listener("ChipPlacedEvent", self.chip_placed_event)
         self.event_manager.add_listener("GameReadyEvent", self.game_ready_event)
+        self.event_manager.add_listener("SurrenderEvent", self.surrender_event)
 
 
     async def dispatch(self, event):
@@ -93,6 +97,31 @@ class ReversiEventHandler:
 
     async def turn_made(self):
         self.log.debug("Turn made")
+
+    async def surrender_event(self, event) -> Tuple[Dict[str, Any], ResponseType]:
+        """
+        player surrenders
+        """
+        session = event["session"]
+        player_id = event["data"]["player_id"] 
+        if GameSessionManager.validate_session(session):
+            player_id = self.ws._id
+            GameSessionManager.add_session_ws(session, self.ws)
+        else:
+            return {
+                "event": "SurrenderEvent",
+                "status": 404,
+                "message": "Session does not exist",
+                "data": {
+                    "session": session
+                }
+            }, ResponseType.PLAYER
+        winner_id = GameSessionManager.get_opponent(session, player_id)
+        return GameOverEvent(
+            winner=winner_id,
+            title=f"Game Over",
+            reason=f"Player {player_id} has surrendered"
+        ).to_dict(), ResponseType.SESSION
 
 
     async def session_join_event(self, event) -> Tuple[Dict[str, Any], ResponseType]:
