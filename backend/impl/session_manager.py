@@ -120,6 +120,22 @@ class GameSessionManager(SessionManager):
         LobbySessionManager.remove_session(session)
         super().remove_session_ws(session, ws, pass_check)
 
+    @classmethod
+    def get_opponent(cls, session: str, player_id: int) -> int | None:
+        """
+        Returns the opponent of a player in a session
+        """
+        if session not in cls.sessions:
+            return None
+        if len(cls.sessions[session]) != 2:
+            return None
+        if cls.sessions[session][0]._id == player_id:
+            return cls.sessions[session][1]._id
+        elif cls.sessions[session][1]._id == player_id:
+            return cls.sessions[session][0]._id
+        return None
+        
+
 
 
 class LobbySessionManager(SessionManager):
