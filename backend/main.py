@@ -13,9 +13,10 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 from utils import Grid
+from handlers import LoginHandler, SignInHandler
 from impl.session_manager import GameSessionManager, LobbySessionManager
 from impl.event_handler import ReversiEventHandler, LobbyEventHandler
-import hikari
+
 
 
 
@@ -120,7 +121,7 @@ class CreateSessionHandler(RequestHandler):
         self.set_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
         self.set_header('Access-Control-Allow-Headers', 'Content-Type')
 
-    def get(self):
+    async def get(self):
         code = LobbySessionManager.create_session()
         self.write({
             "status": 200,
@@ -156,6 +157,8 @@ def make_app():
         (r"/reversi", GameWebSocket),
         (r"/create_session", CreateSessionHandler),
         (r"/lobby", LobbyWebSocket),
+        (r"/login", LoginHandler),
+        (r"/signin", SignInHandler)
     ])
 
 async def main():
