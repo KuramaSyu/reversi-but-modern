@@ -16,6 +16,7 @@ from utils import Grid
 from handlers import LoginHandler, SignInHandler
 from impl.session_manager import GameSessionManager, LobbySessionManager
 from impl.event_handler import ReversiEventHandler, LobbyEventHandler
+from core import Database
 
 
 
@@ -158,11 +159,14 @@ def make_app():
         (r"/create_session", CreateSessionHandler),
         (r"/lobby", LobbyWebSocket),
         (r"/login", LoginHandler),
-        (r"/signin", SignInHandler)
+        (r"/register", SignInHandler)
     ])
 
 async def main():
     PORT = 8888
+    db = Database()
+    print(db)
+    await db.connect()
     print(f"Starting server on port {PORT}")
     app = make_app()
     app.listen(PORT)
