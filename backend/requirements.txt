@@ -2,5 +2,6 @@ tornado==6.3.2
 websockets==11.0.3
 hikari
 aiofiles
+pyyaml
 asyncpg
 pandas
