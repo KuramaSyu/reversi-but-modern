@@ -201,3 +201,4 @@ yarn.lock
 package.json
 backend/bin
 /bin
+backend/config.yaml
