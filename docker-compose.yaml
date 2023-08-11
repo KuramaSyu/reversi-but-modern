@@ -16,3 +16,13 @@ services:
       - "4242:3000"
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
+  db:
+    container_name: postgresql
+    image: postgres
+    restart: "unless-stopped"
+    environment:
+      POSTGRES_USER: reversi
+      POSTGRES_PASSWORD: secr33t
+      POSTGRES_DB: reversi_db
+    volumes:
+      - ./../postgres-data:/var/lib/postgresql/data
