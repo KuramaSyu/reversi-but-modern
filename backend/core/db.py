@@ -13,26 +13,22 @@ import aiofiles
 import asyncpg
 import pandas as pd
 
+from core import ConfigProxy, ConfigType, Singleton
+
+conf = ConfigProxy(ConfigType.YAML, path=f"{os.getcwd()}/config.yaml")
+
+def get_config() -> ConfigProxy:
+    global conf
+    return conf
 
 
 __all__: Final[Sequence[str]] = ["Database"]
 
 log = logging.getLogger(__name__)
-DSN = ""
+DSN = conf.backend.DSN
 table_logging = False
 log.info(f"DB table DEBUG logging: {table_logging}")
 db_calls: Dict[datetime, int] = {}
-
-
-class Singleton(type):
-    _instances = {}
-    _log = logging.getLogger(__name__)
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-            cls._log.info("Created Singleton for `{cls.__name__}`")
-        cls._log.info("Returned Singleton for `{cls.__name__}`")
-        return cls._instances[cls]
     
 
 def add_call():
@@ -67,7 +63,7 @@ class Database(metaclass=Singleton):
     def __init__(self) -> None:
         self._connected = asyncio.Event()
         self.calls = 0
-        self.log = logging.GetLogger(self.__class__.__name__)
+        self.log = logging.getLogger(self.__class__.__name__)
 
     async def wait_until_connected(self) -> None:
         await self._connected.wait()
@@ -106,7 +102,7 @@ class Database(metaclass=Singleton):
         self.log.info("Closed database connection.")
 
     async def sync(self) -> None:
-        await self.execute_script("./core/sript.sql")
+        await self.execute_script(f"{os.getcwd()}/core/script.sql")
         self.log.info("Synchronised database.")
 
     @acquire
@@ -174,7 +170,7 @@ def debug_logging(reraise_exc: bool = True):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             self = args[0]
-            log = logging.getLogger(__name__, self.name, func.__name__)
+            log = logging.getLogger(f"{__name__}.{self.name}.{func.__name__}")
             try:
                 return_value = await func(*args, **kwargs)
                 if self.do_log:
@@ -232,8 +228,8 @@ class Table():
     @debug_logging()
     async def insert(
         self, 
-        which_columns: List[str], 
-        values: List | Dict[str, Any], 
+        which_columns: List[str] = None, 
+        values: List | Dict[str, Any] = None, 
         returning: str = "*",
         on_conflict: str = "",
     ) -> Optional[asyncpg.Record]:
@@ -421,8 +417,8 @@ class Table():
         records = await self.db.fetch(sql, *matching_values)
         return records
 
-    async def select_row(self, columns: List[str], matching_values: List, select: str = "*") -> Optional[asyncpg.Record]:
-        records = await self.select(columns, matching_values, select=select)
+    async def select_row(self, columns: List[str] = None, matching_values: List = None, where: Dict[str, Any] | None = None, select: str = "*") -> Optional[asyncpg.Record]:
+        records = await self.select(columns, matching_values, where=where, select=select)
         if not records:
             return None
         return records[0]
