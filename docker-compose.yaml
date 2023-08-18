@@ -23,7 +23,7 @@ services:
       traefik.http.routers.sonarr.tls: true
       com.centurylinklabs.watchtower.enable: false
   db:
-    container_name: postgresql
+    container_name: postgresql_reversi
     image: postgres
     restart: "unless-stopped"
     environment:
