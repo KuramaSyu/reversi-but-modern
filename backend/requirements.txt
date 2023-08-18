@@ -5,3 +5,4 @@ aiofiles
 pyyaml
 asyncpg
 pandas
+bcrypt
