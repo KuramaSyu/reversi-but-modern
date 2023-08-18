@@ -20,7 +20,7 @@ services:
       traefik.http.routers.reversi.entrypoints: websecure
       traefik.http.routers.reversi.service: reversi-service
       traefik.http.services.reversi-service.loadbalancer.server.port: 4242
-      traefik.http.routers.sonarr.tls: true
+      traefik.http.routers.reversi.tls: true
       com.centurylinklabs.watchtower.enable: false
   db:
     container_name: postgresql_reversi
