@@ -147,6 +147,8 @@ class ConfigType(Enum):
         else:
             raise RuntimeError(f"Function {func} is an unknown type")
 
+def get_config():
+    return ConfigProxy(ConfigType.YAML, path=f"{os.getcwd()}/config.yaml")
 
 if __name__ == "__main__":
     config = ConfigProxy(ConfigType.YAML)
