@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import config from "../app.config.json";
 
-const backendName = config.backend.name;
+const backendName = config.backend.rest_url;
 
 interface Credentials {
     username: string;
@@ -10,7 +10,7 @@ interface Credentials {
   }
   
   async function loginUser(credentials: Credentials): Promise<string> {
-    return fetch(`http://${backendName}:8888/login`, {
+    return fetch(`${backendName}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

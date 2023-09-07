@@ -1,5 +1,6 @@
 {
   "backend": {
-    "url": "ws://localhost:8888"
+    "websocket_url": "ws://backend:8888",
+    "rest_url": "http://backend:8888"
   }
 }

@@ -4,7 +4,7 @@ import { TypeAnimation } from 'react-type-animation';
 import config from '../app.config.json';
 import { JsxElement } from 'typescript';
 
-const backendName = config.backend.name;
+const backendName = config.backend.websocket_url;
 
 interface BoardProps {
 	theme: string;
@@ -607,7 +607,7 @@ const Reversi: React.FC<ReversiProps> = ({ theme }) => {
 	useEffect(() => {
 		if (didInit === false) {
 			didInit = true;
-			const newSocket = new WebSocket(`ws://${backendName}:8888/reversi`);
+			const newSocket = new WebSocket(`${backendName}/reversi`);
 
 			newSocket.onopen = (event) => {
 				console.log('connected');
