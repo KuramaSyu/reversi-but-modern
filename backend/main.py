@@ -16,7 +16,9 @@ from utils import Grid
 from handlers import LoginHandler, SignInHandler
 from impl.session_manager import GameSessionManager, LobbySessionManager
 from impl.event_handler import ReversiEventHandler, LobbyEventHandler
-from core import Database
+from core import Database, get_config
+
+config = get_config()
 
 
 
@@ -110,7 +112,7 @@ class LobbyWebSocket(WebSocketHandler):
 
 
 class CreateSessionHandler(RequestHandler):
-    BASE_URL = "http://inuthebot.duckdns.org:4242/"
+    BASE_URL = config.public.url
 
     def __init__(self, *args, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
