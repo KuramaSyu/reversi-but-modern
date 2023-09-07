@@ -6,10 +6,17 @@ services:
     restart: "unless-stopped"
     networks:
       - default
+      - proxy
     ports:
       - "8888:8888"
     labels:
-      - "com.centurylinklabs.watchtower.enable=false"
+      com.centurylinklabs.watchtower.enable: false
+      traefik.enable: true
+      traefik.http.routers.reversi-ws.rule: Host(`reversi-ws.inuthebot.duckdns.org`)
+      traefik.http.routers.reversi-ws.entrypoints: websecure
+      traefik.http.routers.reversi-ws.service: reversi-ws-service
+      traefik.http.services.reversi-ws-service.loadbalancer.server.port: 8888
+      traefik.http.routers.reversi-ws.tls: true
   reversi-fontend:
     container_name: frontend
     build: ./frontend
