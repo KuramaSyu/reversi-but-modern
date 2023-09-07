@@ -1,5 +1,5 @@
 {
   "backend": {
-    "name": "localhost"
+    "url": "ws://localhost:8888"
   }
 }
