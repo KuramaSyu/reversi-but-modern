@@ -4,6 +4,8 @@ services:
     container_name: backend
     build: ./backend
     restart: "unless-stopped"
+    networks:
+      - default
     ports:
       - "8888:8888"
     labels:
@@ -12,6 +14,9 @@ services:
     container_name: frontend
     build: ./frontend
     restart: "unless-stopped"
+    networks:
+      - default
+      - proxy
     ports:
       - "4242:3000"
     labels:
@@ -19,16 +24,23 @@ services:
       traefik.http.routers.reversi.rule: Host(`reversi.inuthebot.duckdns.org`)
       traefik.http.routers.reversi.entrypoints: websecure
       traefik.http.routers.reversi.service: reversi-service
-      traefik.http.services.reversi-service.loadbalancer.server.port: 4242
+      traefik.http.services.reversi-service.loadbalancer.server.port: 3000
       traefik.http.routers.reversi.tls: true
       com.centurylinklabs.watchtower.enable: false
   db:
     container_name: postgresql_reversi
     image: postgres
     restart: "unless-stopped"
+    networks:
+      - default
     environment:
       POSTGRES_USER: reversi
       POSTGRES_PASSWORD: secr33t
       POSTGRES_DB: reversi_db
     volumes:
       - ./../postgres-data:/var/lib/postgresql/data
+
+networks:
+  proxy:
+    external: true
+  default:
