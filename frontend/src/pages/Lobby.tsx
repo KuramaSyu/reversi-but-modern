@@ -5,7 +5,7 @@ import { ReactComponent as CopySvg } from "../svg/copy.svg";
 import config from "../app.config.json";
 import { join } from "path";
 
-const backendName = config.backend.name;
+const backendName = config.backend.url;
 console.log(backendName);
 
 interface SessionCodeDisplayProps {
@@ -149,7 +149,7 @@ const Lobby: React.FC = () => {
 		// Establish WebSocket connection
 		var socket: WebSocket;
 		if (ws === null) {
-			socket = new WebSocket(`ws://${backendName}:8888/lobby`);
+			socket = new WebSocket(`${backendName}/lobby`);
 			setWs(socket);
 		} else {
 			socket = ws;
