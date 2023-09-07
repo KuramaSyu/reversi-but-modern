@@ -5,7 +5,7 @@ import { ReactComponent as CopySvg } from "../svg/copy.svg";
 import config from "../app.config.json";
 import { join } from "path";
 
-const backendName = config.backend.url;
+const backendName = config.backend.websocket_url;
 console.log(backendName);
 
 interface SessionCodeDisplayProps {
