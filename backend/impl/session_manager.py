@@ -2,11 +2,13 @@ from typing import *
 from datetime import datetime
 from tornado.websocket import WebSocketHandler
 import random
+import logging
 
 
 class SessionManager:
     websockets: Dict[int, WebSocketHandler] = {}
     sessions: Dict[str, List[WebSocketHandler]] = {}
+    log = logging.getLogger("SessionManager")
 
     @classmethod
     def get_ws_id(cls) -> int:
@@ -48,6 +50,7 @@ class SessionManager:
             return
         
         if len(cls.sessions[session]) == 0:
+            cls.log.debug(f"Delete session {session}")
             del cls.sessions[session]
 
     @classmethod
@@ -71,6 +74,7 @@ class SessionManager:
                 raise Exception(f"Session {session} already exists")
             return cls.create_session()
         cls.sessions[code] = []
+        cls.log.debug(f"Created session {code}")
         return code
     
     @classmethod
@@ -83,6 +87,7 @@ class SessionManager:
 class GameSessionManager(SessionManager):
     websockets: Dict[int, WebSocketHandler] = {}
     sessions: Dict[str, List[WebSocketHandler]] = {}
+    log = logging.getLogger("GameSessionManager")
     
     @classmethod
     def create_session(cls, session: str | None = None) -> str:
@@ -99,6 +104,7 @@ class GameSessionManager(SessionManager):
                 raise Exception(f"Session {session} already exists")
             return cls.create_session()
         cls.sessions[code] = []
+        cls.log.debug(f"Created session {code}")
         return code
     
     @classmethod
@@ -141,6 +147,7 @@ class GameSessionManager(SessionManager):
 class LobbySessionManager(SessionManager):
     websockets: Dict[int, WebSocketHandler] = {}
     sessions: Dict[str, List[WebSocketHandler]] = {}
+    log = logging.getLogger("LobbySessionManager")
 
     @classmethod
     def transfer_to_game(cls, session: str) -> None:
