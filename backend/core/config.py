@@ -116,7 +116,7 @@ class ConfigAlgorithms:
         stream = ""
         with open(path, "r", encoding="utf-8") as f:
             stream = f.read()
-        config = yaml.load(stream, Loader=yaml.CLoader)
+        config = yaml.load(stream, Loader=yaml.Loader)
         return [SectionProxy(k, v) for k, v in config.items()]
 
     @staticmethod
