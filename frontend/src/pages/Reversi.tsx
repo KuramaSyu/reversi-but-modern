@@ -28,8 +28,8 @@ interface BoardState {
 }
 
 interface ChipProps {
-	color: string;
-	bg_color: string;
+	color: {};
+	bg_color: {};
 }
 
 interface RuleErrorEvent {
@@ -83,9 +83,12 @@ class Chip extends React.Component<ChipProps> {
 		const { color, bg_color } = this.props;
 
 		return (
-			<div className={`items-center justify-center w-[90%] h-[90%] rounded-full ${bg_color}`}>
+			<div 
+			className={`items-center justify-center w-[90%] h-[90%] rounded-full `} //${bg_color}
+			style={bg_color}>
 				<div
-					className={`items-center justify-center transition-all duration-300 ease-out rounded-full w-full h-full ${color}`}
+					className={`items-center justify-center transition-all duration-300 ease-out rounded-full w-full h-full `} //${color}
+					style={color}
 				></div>
 			</div>
 
@@ -124,20 +127,56 @@ class Board extends React.Component<BoardProps, BoardState> {
 	board: Array<{ row: number, col: number, owner_id: number }> = [];
 	chips: Record<number, {3: JSX.Element; 2:JSX.Element ; 1:JSX.Element ;}> = {
 		1: {
-			3: <Chip color="bg-highlight-a/100 border-4 border-black/40" bg_color='bg-a' />,
-			2: <Chip color="bg-highlight-a/85 border-4 border-black/40" bg_color='bg-a' />,
-			1: <Chip color="bg-highlight-a/70 border-4 border-black/40" bg_color='bg-a' />,
+			3: <Chip color={{
+				borderColor: 'black',
+				borderWidth: 4,
+				color: 'white',	
+			}} bg_color={{
+				backgroundColor: 'royalblue'
+			}} />,
+			2: <Chip color={{
+				borderColor: 'black',
+				borderWidth: 4,
+				color: 'white',	
+			}} bg_color={{
+				backgroundColor: 'royalblue'
+			}} />,
+			1: <Chip color={{
+				borderColor: 'black',
+				borderWidth: 4,
+				color: 'white',	
+			}} bg_color={{
+				backgroundColor: 'royalblue'
+			}} />,
 		},
 		2: {
-			3: <Chip color="bg-highlight-d/100 border-4 border-black/40" bg_color='bg-b' />,
-			2: <Chip color="bg-highlight-d/85 border-4 border-black/40" bg_color='bg-b' />,
-			1: <Chip color="bg-highlight-d/70 border-4 border-black/40" bg_color='bg-b' />,
+			3: <Chip color={{
+				borderColor: 'black',
+				borderWidth: 4,
+				color: 'white',	
+			}} bg_color={{
+				backgroundColor: 'orange'
+			}} />,
+			2: <Chip color={{
+				borderColor: 'orange',
+				borderWidth: 4,
+				color: 'white',	
+			}} bg_color={{
+				backgroundColor: 'red'
+			}} />,
+			1: <Chip color={{
+				borderColor: 'black',
+				borderWidth: 4,
+				color: 'white',	
+			}} bg_color={{
+				backgroundColor: 'orange'
+			}} />,
 		},
 	};
 
 	// higher number = intenser color
-	chip_colors: Record<number, {3: string; 2: string; 1: string;}> = {0:{3:"", 2:"", 1:""}};
-	bg_colors: Record<number, string> = {1:"bg-a", 2:"bg-b"};
+	chip_colors: Record<number, {3: {}; 2: {}; 1: {};}> = {0:{3:{}, 2:{}, 1:{}}};
+	bg_colors: Record<number, string> = {1:"255, 0, 0", 2:"0, 255, 0"};
 	current_player_id: number = 0;
 	player_1_id: number = 1;
 	player_2_id: number = 2;
@@ -175,7 +214,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 		// this.letters.forEach(element => {
 		// 	this.COLOR_VARIANTS.push([`bg-chip-${element}1`, `bg-chip-${element}2`])
 		// });
-		this.COLOR_VARIANTS = [["bg-chip-a1/60", "bg-chip-a2/60"]]
+		this.COLOR_VARIANTS = [[]] // "bg-chip-a1/60", "bg-chip-a2/60"
 		this.COLOR = this.pickColor()
 	}
 
@@ -245,6 +284,19 @@ class Board extends React.Component<BoardProps, BoardState> {
 	}
 
 
+	get_chip_bg_color(player_id: number, chip_type: number) {
+		// chip type: 1, 2, 3
+		var intensities: Record<number, number> = {
+			1: 0.6,
+			2: 0.6,
+			3: 1
+		}
+		var intensity = intensities[chip_type]
+
+		var ret_val = {backgroundColor: `rgba(${this.bg_colors[player_id]}, ${intensity})`}
+		console.log("bg color: ", ret_val)
+		return ret_val
+	}
 	on_game_ready(event: GameReadyEvent, custom_id: number) {
 		console.log("Game ready event: ", event)
 		if (event.status !== 200) {
@@ -261,35 +313,60 @@ class Board extends React.Component<BoardProps, BoardState> {
 		// /100 /60 is not working because tailwind needs full string
 		// fix?
 		const test = `${this.COLOR[0]}/60`.toString();
+		this.bg_colors = {
+			[this.player_1_id]: '65, 105, 225',
+			[this.player_2_id]: '152, 153, 50',
+		};
 		this.chip_colors = {
 			[this.player_1_id]: {
-				3: `${this.COLOR[0]} border-4 border-black/40`,
-				2: `${this.COLOR[0]} border-4 border-black/40`,
-				1: `${this.COLOR[0]} border-4 border-black/40`,
+				3: {
+					borderColor: `rgba(0,0,0,0.6)`,
+					borderWidth: 4,
+					color: 'black',	
+				},
+				2: {
+					borderColor: `rgba(0,0,0,0.6)`,
+					borderWidth: 4,
+					color: 'black',	
+				},
+				1: {
+					borderColor: `rgba(0,0,0,0.6)`,
+					borderWidth: 4,
+					color: 'black',	
+				},
 			},
 			[this.player_2_id]: {
-				3: `${this.COLOR[1]} border-4 border-black/40`,
-				2: `${this.COLOR[1]} border-4 border-black/40`,
-				1: `${this.COLOR[1]} border-4 border-black/40`,
+				3: {
+					borderColor: `rgba(0,0,0,0.6)`,
+					borderWidth: 4,
+					color: 'white',		
+				},
+				2: {
+					borderColor: `rgba(0,0,0,0.6)`,
+					borderWidth: 4,
+					color: 'white',		
+				},
+				1: {
+					borderColor: `rgba(0,0,0,0.6)`,
+					borderWidth: 4,
+					color: 'white',		
+				},
 			},
-		};
-		this.bg_colors = {
-			[this.player_1_id]: "bg-a",
-			[this.player_2_id]: "bg-b",
 		};
 
-		this.chips = {
-			[this.player_1_id]: {
-				3: <Chip color={`${this.chip_colors[this.player_1_id][3]}`} bg_color='bg-a' />,
-				2: <Chip color={`${this.chip_colors[this.player_1_id][2]}`} bg_color='bg-a' />,
-				1: <Chip color={`${this.chip_colors[this.player_1_id][1]}`} bg_color='bg-a' />,
-			},
-			[this.player_2_id]: {
-				3: <Chip color={`${this.chip_colors[this.player_2_id][3]}`} bg_color='bg-b' />,
-				2: <Chip color={`${this.chip_colors[this.player_2_id][2]}`} bg_color='bg-b' />,
-				1: <Chip color={`${this.chip_colors[this.player_2_id][1]}`} bg_color='bg-b' />,
-			},
-		};
+
+		// this.chips = {
+		// 	[this.player_1_id]: {
+		// 		3: <Chip color={`${this.chip_colors[this.player_1_id][3]}`} bg_color='bg-a' />,
+		// 		2: <Chip color={`${this.chip_colors[this.player_1_id][2]}`} bg_color='bg-a' />,
+		// 		1: <Chip color={`${this.chip_colors[this.player_1_id][1]}`} bg_color='bg-a' />,
+		// 	},
+		// 	[this.player_2_id]: {
+		// 		3: <Chip color={`${this.chip_colors[this.player_2_id][3]}`} bg_color='bg-b' />,
+		// 		2: <Chip color={`${this.chip_colors[this.player_2_id][2]}`} bg_color='bg-b' />,
+		// 		1: <Chip color={`${this.chip_colors[this.player_2_id][1]}`} bg_color='bg-b' />,
+		// 	},
+		// };
 		board.forEach(
 			(chip) => {
 				this.board.push({ row: chip.row, col: chip.column, owner_id: chip.owner_id })
@@ -423,10 +500,14 @@ class Board extends React.Component<BoardProps, BoardState> {
 					border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
 					${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
 				</div>
-				<div className={`flex rounded-full ${this.chip_colors[this.player_1_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+				<div 
+				className={`flex rounded-full ${this.chip_colors[this.player_1_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} 
+				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
 					{this.player_1_id === this.state.player_id ? 'You' : ""}
 				</div>
-				<div className={`flex rounded-full ${this.chip_colors[this.player_2_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+				<div 
+				className={`flex rounded-full ${this.chip_colors[this.player_2_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} 
+				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
 					{this.player_2_id === this.state.player_id ? 'You' : ""}
 				</div>
 			</div>
@@ -514,8 +595,10 @@ class Board extends React.Component<BoardProps, BoardState> {
 				// add normal squares
 				const color = (row + col) % 2 === 0 ? "bg-b " : "bg-d";
 				const isActive = row === clicked_row && col === clicked_col;
-				const emptyChip = <Chip color="bg-transparent rounded-lg w-[0%] h-[0%] border-transparent" bg_color='' />;
-
+				//const emptyChip = <Chip color="bg-transparent rounded-lg w-[0%] h-[0%] border-transparent" bg_color='' />;
+				const emptyChip = <Chip color={{
+					color: 'bg-transparent'
+				}} bg_color={{backgroundColor: ''}} />;
 				// find chip in board for current field
 				const owner_id = this.board.find(
 					(item) => item.row === row && item.col === col
@@ -527,11 +610,13 @@ class Board extends React.Component<BoardProps, BoardState> {
 					var intensity: 1 | 2 | 3 = 1;
 					console.log("last chips swapped: ", this.last_chips_swapped)
 					if (this.last_chips_swapped.find((item) => { return item.row === row && item.column === col})) {
+						// was swapped last time
 						intensity = 2;
 					} else if (this.last_chip_placed.row === row && this.last_chip_placed.column === col) {
+						// was placed last time
 						intensity = 3;
 					}
-					chip = <Chip color={this.chip_colors[owner_id][intensity]} bg_color={this.bg_colors[owner_id]}/>;
+					chip = <Chip color={this.chip_colors[owner_id][intensity]} bg_color={this.get_chip_bg_color(owner_id, intensity)}/>;
 				}
 				// set hover color to red if not in valid moves
 				var hover_color = "";
