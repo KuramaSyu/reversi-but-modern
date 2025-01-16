@@ -78,6 +78,7 @@ class Database(metaclass=Singleton):
         return self._pool # normally its called ()
 
     async def connect(self) -> None:
+        return
         assert not self.is_connected, "Already connected."
         pool: Optional[asyncpg.Pool] = await asyncpg.create_pool(dsn=DSN)
         if not isinstance(pool, asyncpg.Pool):
