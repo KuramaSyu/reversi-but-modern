@@ -315,7 +315,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 		const test = `${this.COLOR[0]}/60`.toString();
 		this.bg_colors = {
 			[this.player_1_id]: '65, 105, 225',
-			[this.player_2_id]: '152, 153, 50',
+			[this.player_2_id]: '255, 204, 64',
 		};
 		this.chip_colors = {
 			[this.player_1_id]: {
@@ -346,7 +346,7 @@ class Board extends React.Component<BoardProps, BoardState> {
 					borderWidth: 4,
 					color: 'white',		
 				},
-				1: {
+				1: { 
 					borderColor: `rgba(0,0,0,0.6)`,
 					borderWidth: 4,
 					color: 'white',		
@@ -492,6 +492,8 @@ class Board extends React.Component<BoardProps, BoardState> {
 	}
 	playerInfo(px_rest_width: number) {
 		let color = this.chip_colors[this.player_1_id][1];
+		let color1 = this.get_chip_bg_color(this.player_1_id, 3)
+		let color2 = this.get_chip_bg_color(this.player_2_id, 3)
 		// normaly color is put into tsx, but tailwind makes problems
 		// with too dynamic colors
 		// maybe add it to style
@@ -506,12 +508,12 @@ class Board extends React.Component<BoardProps, BoardState> {
 				</div>
 				<div /* The player chips at the right side */
 				className={`flex rounded-full justify-center bg-a items-center text-4xl text-a font-extralight font-mono`} 
-				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}> 
+				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2, ...color1 }}> 
 					{this.player_1_id === this.state.player_id ? 'You' : ""}
 				</div>
 				<div 
 				className={`flex rounded-full bg-b justify-center items-center text-4xl text-a font-extralight font-mono`} 
-				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2, ...color2 }}>
 					{this.player_2_id === this.state.player_id ? 'You' : ""}         
 				</div>
 			</div>
