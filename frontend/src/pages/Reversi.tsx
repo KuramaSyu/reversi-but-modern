@@ -491,6 +491,10 @@ class Board extends React.Component<BoardProps, BoardState> {
 		)
 	}
 	playerInfo(px_rest_width: number) {
+		let color = this.chip_colors[this.player_1_id][1];
+		// normaly color is put into tsx, but tailwind makes problems
+		// with too dynamic colors
+		// maybe add it to style
 		return (
 			<div className='flex basis-3/4 flex-grow'>
 			<div className="flex flex-row justify-around items-center relative mr-5 lg:my-0 lg:mx-5 overflow-hidden" 
@@ -500,15 +504,15 @@ class Board extends React.Component<BoardProps, BoardState> {
 					border-t-1 border-l-0 border-r-0 border-b-0 transition-all duration-[1s] ease-out 
 					${this.current_player_id !== this.player_1_id ? 'rotate-90 border-highlight-d' : '-rotate-90 border-highlight-a'} `}>
 				</div>
-				<div 
-				className={`flex rounded-full ${this.chip_colors[this.player_1_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} 
-				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
+				<div /* The player chips at the right side */
+				className={`flex rounded-full justify-center bg-a items-center text-4xl text-a font-extralight font-mono`} 
+				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}> 
 					{this.player_1_id === this.state.player_id ? 'You' : ""}
 				</div>
 				<div 
-				className={`flex rounded-full ${this.chip_colors[this.player_2_id][1]} justify-center items-center text-4xl text-a font-extralight font-mono`} 
+				className={`flex rounded-full bg-b justify-center items-center text-4xl text-a font-extralight font-mono`} 
 				style={{ height: px_rest_width / 2.2, width: px_rest_width / 2.2 }}>
-					{this.player_2_id === this.state.player_id ? 'You' : ""}
+					{this.player_2_id === this.state.player_id ? 'You' : ""}         
 				</div>
 			</div>
 		</div>
